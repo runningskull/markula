@@ -44,6 +44,8 @@
 
   border: none;
   background: transparent;
+
+  -webkit-font-smoothing: subpixel-antialiased;
 }
 
 #editor:focus {
@@ -67,5 +69,6 @@
   left: 0;
   width: 100%;
   padding: 50px;
+  -webkit-font-smoothing: subpixel-antialiased;
 }
 
