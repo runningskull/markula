@@ -24,8 +24,9 @@ var highlight = throttle(highlight_, 2000)
   , sync_scroll = ScrollSyncer()
   , $preview = $('#preview')
   , $eframe = $('#editor-frame')
-  , $ed = $('#editor')
   , $md = $('.markdown-body')
+  , $ed = $('#editor')
+  , $bod = $('body')
   , $rs = $('#rs')
 
 
@@ -75,6 +76,9 @@ function load_saved_data() {
 
   var ss = sload('sync-scroll')
   if (ss != null) do_sync_scroll = (ss != 'false');
+
+  var rs = sload('rs-position')
+  if (rs != null) position_divider(parseInt(rs, 10));
 }
 
 function print_help() {
@@ -132,17 +136,33 @@ function listen_for_resize() {
 
       $doc.off('.resizing')
       $rs.off('.resizing')
+
+      persist('rs-position', e.pageX)
     })
 
     $rs.on('drag.resizing', function (e) {
-      var x = (e.pageX / ww) * 100
-        , xx = (100 - x)
-
-      $eframe.css({width: x+'%'})
-      $preview.css({left:x+'%', width:xx+'%'})
+      resize_frames(e.pageX, ww)
     })
   })
 }
+
+function resize_frames(xpx, ww) {
+  ww || (ww = window.innerWidth)
+
+  var x = (xpx / ww) * 100
+    , xx = (100 - x)
+
+  $eframe.css({width: x+'%'})
+  $preview.css({left:x+'%', width:xx+'%'})
+}
+
+function position_divider(xpx) {
+  var ww = window.innerWidth
+  resize_frames(xpx, ww)
+  $rs.css({left: xpx})
+  $bod.removeClass('resizing')
+}
+
 
 function persist(k, v) { localStorage.setItem('mnmlmd-'+k, v) }
 function unpersist(k) { localStorage.removeItem('mnmlmd-'+k) }
@@ -175,7 +195,8 @@ window.md = {
     if (confirm("Erase saved config?")) {
       ['sync-scroll', 
         'editor-css', 
-        'preview-css'].forEach(unpersist)
+        'preview-css',
+        'rs-position'].forEach(unpersist)
 
       location.reload()
     }
