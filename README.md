@@ -12,7 +12,7 @@
 - github-styled preview
 - saves content to localStorage so you don't lose it
 
-check the dev tools for configuration options!
+check the dev console for configuration options!
 
 ## Dev
 
