@@ -5,11 +5,14 @@
 
 ## Features
 
-- pain-free editing
+- simple editing
 - instant preview
+- synchronized scrolling
 - github-flavored markdown
 - github-styled preview
 - saves content to localStorage so you don't lose it
+
+check the dev tools for configuration options!
 
 ## Dev
 
