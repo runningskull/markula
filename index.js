@@ -1,3 +1,14 @@
+//------------------------------------------------------------------------------
+// CSS
+
+require('github-markdown-css/github-markdown.css')
+require('./style.css')
+
+
+
+//------------------------------------------------------------------------------
+// App
+
 // Libraries
 var throttle = require('lodash.throttle')
   , hljs = require('highlight.js')
@@ -169,13 +180,4 @@ window.md = {
     }
   }
 }
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-// CSS
-
-require('github-markdown-css/github-markdown.css')
-require('./style.css')
-
 
