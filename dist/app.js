@@ -130,14 +130,13 @@
 	function print_help() {
 	  var _ = function(x,s){ console.log('%c'+x, s||'')}
 
-	  _("Available Configuration:", 'font-weight:bold;font-size:1.125em;')
-	  console.group()
+	  console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
 	  _("md.sync_scroll( Bool )")
 	  _("md.editor_css( {...} )")
 	  _("md.preview_css( {...} )")
 	  _("md.reset_config()")
 	  console.groupEnd()
-	  _("\nConfiguration settings will be persisted across sessions")
+	  _("\nConfiguration settings will be persisted across sessions", "font-style:italic")
 	}
 
 	function ScrollSyncer() {
