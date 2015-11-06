@@ -17,6 +17,7 @@ check the dev console for configuration options!
 ## Dev
 
 - `git clone git@github.com:runningskull/mnmlmd.git`
-- `cd mnmlmd && ./dev`
+- `cd mnmlmd && npm install && npm install --global webpack-dev-server`
+- `./dev`
 - open `localhost:8080`
 
