@@ -69,8 +69,8 @@ function highlight_() {
 
 function load_saved_data() {
   $ed.val(sload('md'))
-  $ed.css(sload('editor-css') || {})
-  $preview.css(sload('preview-css') || {})
+  $ed.css(JSON.parse(sload('editor-css') || "{}"))
+  $preview.css(JSON.parse(sload('preview-css') || "{}"))
 
   var ss = sload('sync-scroll')
   if (ss != null) do_sync_scroll = (ss != 'false');
@@ -159,14 +159,14 @@ window.md = {
   }
 
   ,editor_css: function(css) {
-    if (css===undefined) { return sload('editor-css') }
-    persist('editor-css', css)
+    if (css===undefined) { return JSON.parse(sload('editor-css')) }
+    persist('editor-css', JSON.stringify(css))
     $ed.css(css)
   }
 
   ,preview_css: function(css) {
-    if (css===undefined) { return sload('preview-css') }
-    persist('preview-css', css)
+    if (css===undefined) { return JSON.parse(sload('preview-css')) }
+    persist('preview-css', JSON.stringify(css))
     $preview.css(css)
   }
 
