@@ -1,4 +1,4 @@
-# mnmlmd: The minimal acceptible markdown edior
+# mnmlmd: The minimal acceptible markdown editor
 
 ### [Try It](http://runningskull.github.io/mnmlmd/)
 
