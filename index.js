@@ -69,7 +69,7 @@ function highlight_() {
 
 function load_saved_data() {
   $ed.val(sload('md'))
-  $ed.css(sload('ed-css') || {})
+  $ed.css(sload('editor-css') || {})
   $preview.css(sload('preview-css') || {})
 
   var ss = sload('sync-scroll')
