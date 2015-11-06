@@ -4,6 +4,7 @@
 - instant preview
 - github-flavored markdown
 - github-styled preview
+- saves content to localStorage so you don't lose it
 
 ## Dev
 
