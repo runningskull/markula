@@ -1,5 +1,10 @@
 # mnmlmd: The minimal acceptible markdown edior
 
+### [Try It](runningskull.github.io/mnmlmd/)
+
+
+## Features
+
 - pain-free editing
 - instant preview
 - github-flavored markdown
