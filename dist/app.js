@@ -44,10 +44,22 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
+	//------------------------------------------------------------------------------
+	// CSS
+
+	__webpack_require__(1)
+	__webpack_require__(5)
+	__webpack_require__(7)
+
+
+
+	//------------------------------------------------------------------------------
+	// App
+
 	// Libraries
-	var throttle = __webpack_require__(1)
-	  , hljs = __webpack_require__(4)
-	  , marked = __webpack_require__(143)
+	var throttle = __webpack_require__(9)
+	  , hljs = __webpack_require__(12)
+	  , marked = __webpack_require__(151)
 
 	// Config
 	var do_sync_scroll = true
@@ -104,8 +116,8 @@
 
 	function load_saved_data() {
 	  $ed.val(sload('md'))
-	  $ed.css(sload('ed-css') || {})
-	  $preview.css(sload('preview-css') || {})
+	  $ed.css(JSON.parse(sload('editor-css') || "{}"))
+	  $preview.css(JSON.parse(sload('preview-css') || "{}"))
 
 	  var ss = sload('sync-scroll')
 	  if (ss != null) do_sync_scroll = (ss != 'false');
@@ -194,14 +206,14 @@
 	  }
 
 	  ,editor_css: function(css) {
-	    if (css===undefined) { return sload('editor-css') }
-	    persist('editor-css', css)
+	    if (css===undefined) { return JSON.parse(sload('editor-css')) }
+	    persist('editor-css', JSON.stringify(css))
 	    $ed.css(css)
 	  }
 
 	  ,preview_css: function(css) {
-	    if (css===undefined) { return sload('preview-css') }
-	    persist('preview-css', css)
+	    if (css===undefined) { return JSON.parse(sload('preview-css')) }
+	    persist('preview-css', JSON.stringify(css))
 	    $preview.css(css)
 	  }
 
@@ -218,17 +230,438 @@
 
 
 
-	////////////////////////////////////////////////////////////////////////////////
-	// CSS
+/***/ },
+/* 1 */
+/***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(144)
-	__webpack_require__(148)
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(2);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	// add the styles to the DOM
+	var update = __webpack_require__(4)(content, {});
+	if(content.locals) module.exports = content.locals;
+	// Hot Module Replacement
+	if(false) {
+		// When the styles change, update the <style> tags
+		if(!content.locals) {
+			module.hot.accept("!!./../css-loader/index.js!./github-markdown.css", function() {
+				var newContent = require("!!./../css-loader/index.js!./github-markdown.css");
+				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+				update(newContent);
+			});
+		}
+		// When the module is disposed, remove the <style> tags
+		module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(3)();
+	// imports
 
 
+	// module
+	exports.push([module.id, "@font-face {\n  font-family: octicons-anchor;\n  src: url(data:font/woff;charset=utf-8;base64,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) format('woff');\n}\n\n.markdown-body {\n  -webkit-text-size-adjust: 100%;\n  text-size-adjust: 100%;\n  color: #333;\n  font-family: \"Helvetica Neue\", Helvetica, \"Segoe UI\", Arial, freesans, sans-serif;\n  font-size: 16px;\n  line-height: 1.6;\n  word-wrap: break-word;\n}\n\n.markdown-body a {\n  background-color: transparent;\n}\n\n.markdown-body a:active,\n.markdown-body a:hover {\n  outline: 0;\n}\n\n.markdown-body strong {\n  font-weight: bold;\n}\n\n.markdown-body h1 {\n  font-size: 2em;\n  margin: 0.67em 0;\n}\n\n.markdown-body img {\n  border: 0;\n}\n\n.markdown-body hr {\n  box-sizing: content-box;\n  height: 0;\n}\n\n.markdown-body pre {\n  overflow: auto;\n}\n\n.markdown-body code,\n.markdown-body kbd,\n.markdown-body pre {\n  font-family: monospace, monospace;\n  font-size: 1em;\n}\n\n.markdown-body input {\n  color: inherit;\n  font: inherit;\n  margin: 0;\n}\n\n.markdown-body html input[disabled] {\n  cursor: default;\n}\n\n.markdown-body input {\n  line-height: normal;\n}\n\n.markdown-body input[type=\"checkbox\"] {\n  box-sizing: border-box;\n  padding: 0;\n}\n\n.markdown-body table {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n\n.markdown-body td,\n.markdown-body th {\n  padding: 0;\n}\n\n.markdown-body * {\n  box-sizing: border-box;\n}\n\n.markdown-body input {\n  font: 13px/1.4 Helvetica, arial, nimbussansl, liberationsans, freesans, clean, sans-serif, \"Segoe UI Emoji\", \"Segoe UI Symbol\";\n}\n\n.markdown-body a {\n  color: #4078c0;\n  text-decoration: none;\n}\n\n.markdown-body a:hover,\n.markdown-body a:active {\n  text-decoration: underline;\n}\n\n.markdown-body hr {\n  height: 0;\n  margin: 15px 0;\n  overflow: hidden;\n  background: transparent;\n  border: 0;\n  border-bottom: 1px solid #ddd;\n}\n\n.markdown-body hr:before {\n  display: table;\n  content: \"\";\n}\n\n.markdown-body hr:after {\n  display: table;\n  clear: both;\n  content: \"\";\n}\n\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6 {\n  margin-top: 15px;\n  margin-bottom: 15px;\n  line-height: 1.1;\n}\n\n.markdown-body h1 {\n  font-size: 30px;\n}\n\n.markdown-body h2 {\n  font-size: 21px;\n}\n\n.markdown-body h3 {\n  font-size: 16px;\n}\n\n.markdown-body h4 {\n  font-size: 14px;\n}\n\n.markdown-body h5 {\n  font-size: 12px;\n}\n\n.markdown-body h6 {\n  font-size: 11px;\n}\n\n.markdown-body blockquote {\n  margin: 0;\n}\n\n.markdown-body ul,\n.markdown-body ol {\n  padding: 0;\n  margin-top: 0;\n  margin-bottom: 0;\n}\n\n.markdown-body ol ol,\n.markdown-body ul ol {\n  list-style-type: lower-roman;\n}\n\n.markdown-body ul ul ol,\n.markdown-body ul ol ol,\n.markdown-body ol ul ol,\n.markdown-body ol ol ol {\n  list-style-type: lower-alpha;\n}\n\n.markdown-body dd {\n  margin-left: 0;\n}\n\n.markdown-body code {\n  font-family: Consolas, \"Liberation Mono\", Menlo, Courier, monospace;\n  font-size: 12px;\n}\n\n.markdown-body pre {\n  margin-top: 0;\n  margin-bottom: 0;\n  font: 12px Consolas, \"Liberation Mono\", Menlo, Courier, monospace;\n}\n\n.markdown-body .select::-ms-expand {\n  opacity: 0;\n}\n\n.markdown-body .octicon {\n  font: normal normal normal 16px/1 octicons-anchor;\n  display: inline-block;\n  text-decoration: none;\n  text-rendering: auto;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n  user-select: none;\n}\n\n.markdown-body .octicon-link:before {\n  content: '\\F05C';\n}\n\n.markdown-body>*:first-child {\n  margin-top: 0 !important;\n}\n\n.markdown-body>*:last-child {\n  margin-bottom: 0 !important;\n}\n\n.markdown-body a:not([href]) {\n  color: inherit;\n  text-decoration: none;\n}\n\n.markdown-body .anchor {\n  display: inline-block;\n  padding-right: 2px;\n  margin-left: -18px;\n}\n\n.markdown-body .anchor:focus {\n  outline: none;\n}\n\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6 {\n  margin-top: 1em;\n  margin-bottom: 16px;\n  font-weight: bold;\n  line-height: 1.4;\n}\n\n.markdown-body h1 .octicon-link,\n.markdown-body h2 .octicon-link,\n.markdown-body h3 .octicon-link,\n.markdown-body h4 .octicon-link,\n.markdown-body h5 .octicon-link,\n.markdown-body h6 .octicon-link {\n  color: #000;\n  vertical-align: middle;\n  visibility: hidden;\n}\n\n.markdown-body h1:hover .anchor,\n.markdown-body h2:hover .anchor,\n.markdown-body h3:hover .anchor,\n.markdown-body h4:hover .anchor,\n.markdown-body h5:hover .anchor,\n.markdown-body h6:hover .anchor {\n  text-decoration: none;\n}\n\n.markdown-body h1:hover .anchor .octicon-link,\n.markdown-body h2:hover .anchor .octicon-link,\n.markdown-body h3:hover .anchor .octicon-link,\n.markdown-body h4:hover .anchor .octicon-link,\n.markdown-body h5:hover .anchor .octicon-link,\n.markdown-body h6:hover .anchor .octicon-link {\n  visibility: visible;\n}\n\n.markdown-body h1 {\n  padding-bottom: 0.3em;\n  font-size: 2.25em;\n  line-height: 1.2;\n  border-bottom: 1px solid #eee;\n}\n\n.markdown-body h1 .anchor {\n  line-height: 1;\n}\n\n.markdown-body h2 {\n  padding-bottom: 0.3em;\n  font-size: 1.75em;\n  line-height: 1.225;\n  border-bottom: 1px solid #eee;\n}\n\n.markdown-body h2 .anchor {\n  line-height: 1;\n}\n\n.markdown-body h3 {\n  font-size: 1.5em;\n  line-height: 1.43;\n}\n\n.markdown-body h3 .anchor {\n  line-height: 1.2;\n}\n\n.markdown-body h4 {\n  font-size: 1.25em;\n}\n\n.markdown-body h4 .anchor {\n  line-height: 1.2;\n}\n\n.markdown-body h5 {\n  font-size: 1em;\n}\n\n.markdown-body h5 .anchor {\n  line-height: 1.1;\n}\n\n.markdown-body h6 {\n  font-size: 1em;\n  color: #777;\n}\n\n.markdown-body h6 .anchor {\n  line-height: 1.1;\n}\n\n.markdown-body p,\n.markdown-body blockquote,\n.markdown-body ul,\n.markdown-body ol,\n.markdown-body dl,\n.markdown-body table,\n.markdown-body pre {\n  margin-top: 0;\n  margin-bottom: 16px;\n}\n\n.markdown-body hr {\n  height: 4px;\n  padding: 0;\n  margin: 16px 0;\n  background-color: #e7e7e7;\n  border: 0 none;\n}\n\n.markdown-body ul,\n.markdown-body ol {\n  padding-left: 2em;\n}\n\n.markdown-body ul ul,\n.markdown-body ul ol,\n.markdown-body ol ol,\n.markdown-body ol ul {\n  margin-top: 0;\n  margin-bottom: 0;\n}\n\n.markdown-body li>p {\n  margin-top: 16px;\n}\n\n.markdown-body dl {\n  padding: 0;\n}\n\n.markdown-body dl dt {\n  padding: 0;\n  margin-top: 16px;\n  font-size: 1em;\n  font-style: italic;\n  font-weight: bold;\n}\n\n.markdown-body dl dd {\n  padding: 0 16px;\n  margin-bottom: 16px;\n}\n\n.markdown-body blockquote {\n  padding: 0 15px;\n  color: #777;\n  border-left: 4px solid #ddd;\n}\n\n.markdown-body blockquote>:first-child {\n  margin-top: 0;\n}\n\n.markdown-body blockquote>:last-child {\n  margin-bottom: 0;\n}\n\n.markdown-body table {\n  display: block;\n  width: 100%;\n  overflow: auto;\n  word-break: normal;\n  word-break: keep-all;\n}\n\n.markdown-body table th {\n  font-weight: bold;\n}\n\n.markdown-body table th,\n.markdown-body table td {\n  padding: 6px 13px;\n  border: 1px solid #ddd;\n}\n\n.markdown-body table tr {\n  background-color: #fff;\n  border-top: 1px solid #ccc;\n}\n\n.markdown-body table tr:nth-child(2n) {\n  background-color: #f8f8f8;\n}\n\n.markdown-body img {\n  max-width: 100%;\n  box-sizing: content-box;\n  background-color: #fff;\n}\n\n.markdown-body code {\n  padding: 0;\n  padding-top: 0.2em;\n  padding-bottom: 0.2em;\n  margin: 0;\n  font-size: 85%;\n  background-color: rgba(0,0,0,0.04);\n  border-radius: 3px;\n}\n\n.markdown-body code:before,\n.markdown-body code:after {\n  letter-spacing: -0.2em;\n  content: \"\\A0\";\n}\n\n.markdown-body pre>code {\n  padding: 0;\n  margin: 0;\n  font-size: 100%;\n  word-break: normal;\n  white-space: pre;\n  background: transparent;\n  border: 0;\n}\n\n.markdown-body .highlight {\n  margin-bottom: 16px;\n}\n\n.markdown-body .highlight pre,\n.markdown-body pre {\n  padding: 16px;\n  overflow: auto;\n  font-size: 85%;\n  line-height: 1.45;\n  background-color: #f7f7f7;\n  border-radius: 3px;\n}\n\n.markdown-body .highlight pre {\n  margin-bottom: 0;\n  word-break: normal;\n}\n\n.markdown-body pre {\n  word-wrap: normal;\n}\n\n.markdown-body pre code {\n  display: inline;\n  max-width: initial;\n  padding: 0;\n  margin: 0;\n  overflow: initial;\n  line-height: inherit;\n  word-wrap: normal;\n  background-color: transparent;\n  border: 0;\n}\n\n.markdown-body pre code:before,\n.markdown-body pre code:after {\n  content: normal;\n}\n\n.markdown-body kbd {\n  display: inline-block;\n  padding: 3px 5px;\n  font-size: 11px;\n  line-height: 10px;\n  color: #555;\n  vertical-align: middle;\n  background-color: #fcfcfc;\n  border: solid 1px #ccc;\n  border-bottom-color: #bbb;\n  border-radius: 3px;\n  box-shadow: inset 0 -1px 0 #bbb;\n}\n\n.markdown-body .pl-c {\n  color: #969896;\n}\n\n.markdown-body .pl-c1,\n.markdown-body .pl-s .pl-v {\n  color: #0086b3;\n}\n\n.markdown-body .pl-e,\n.markdown-body .pl-en {\n  color: #795da3;\n}\n\n.markdown-body .pl-s .pl-s1,\n.markdown-body .pl-smi {\n  color: #333;\n}\n\n.markdown-body .pl-ent {\n  color: #63a35c;\n}\n\n.markdown-body .pl-k {\n  color: #a71d5d;\n}\n\n.markdown-body .pl-pds,\n.markdown-body .pl-s,\n.markdown-body .pl-s .pl-pse .pl-s1,\n.markdown-body .pl-sr,\n.markdown-body .pl-sr .pl-cce,\n.markdown-body .pl-sr .pl-sra,\n.markdown-body .pl-sr .pl-sre {\n  color: #183691;\n}\n\n.markdown-body .pl-v {\n  color: #ed6a43;\n}\n\n.markdown-body .pl-id {\n  color: #b52a1d;\n}\n\n.markdown-body .pl-ii {\n  background-color: #b52a1d;\n  color: #f8f8f8;\n}\n\n.markdown-body .pl-sr .pl-cce {\n  color: #63a35c;\n  font-weight: bold;\n}\n\n.markdown-body .pl-ml {\n  color: #693a17;\n}\n\n.markdown-body .pl-mh,\n.markdown-body .pl-mh .pl-en,\n.markdown-body .pl-ms {\n  color: #1d3e81;\n  font-weight: bold;\n}\n\n.markdown-body .pl-mq {\n  color: #008080;\n}\n\n.markdown-body .pl-mi {\n  color: #333;\n  font-style: italic;\n}\n\n.markdown-body .pl-mb {\n  color: #333;\n  font-weight: bold;\n}\n\n.markdown-body .pl-md {\n  background-color: #ffecec;\n  color: #bd2c00;\n}\n\n.markdown-body .pl-mi1 {\n  background-color: #eaffea;\n  color: #55a532;\n}\n\n.markdown-body .pl-mdr {\n  color: #795da3;\n  font-weight: bold;\n}\n\n.markdown-body .pl-mo {\n  color: #1d3e81;\n}\n\n.markdown-body kbd {\n  display: inline-block;\n  padding: 3px 5px;\n  font: 11px Consolas, \"Liberation Mono\", Menlo, Courier, monospace;\n  line-height: 10px;\n  color: #555;\n  vertical-align: middle;\n  background-color: #fcfcfc;\n  border: solid 1px #ccc;\n  border-bottom-color: #bbb;\n  border-radius: 3px;\n  box-shadow: inset 0 -1px 0 #bbb;\n}\n\n.markdown-body:before {\n  display: table;\n  content: \"\";\n}\n\n.markdown-body:after {\n  display: table;\n  clear: both;\n  content: \"\";\n}\n\n.markdown-body .task-list-item {\n  list-style-type: none;\n}\n\n.markdown-body .task-list-item+.task-list-item {\n  margin-top: 3px;\n}\n\n.markdown-body .task-list-item input {\n  margin: 0 0.35em 0.25em -1.6em;\n  vertical-align: middle;\n}\n\n.markdown-body :checked+.radio-label {\n  z-index: 1;\n  position: relative;\n  border-color: #4078c0;\n}\n", ""]);
+
+	// exports
 
 
 /***/ },
-/* 1 */
+/* 3 */
+/***/ function(module, exports) {
+
+	/*
+		MIT License http://www.opensource.org/licenses/mit-license.php
+		Author Tobias Koppers @sokra
+	*/
+	// css base code, injected by the css-loader
+	module.exports = function() {
+		var list = [];
+
+		// return the list of modules as css string
+		list.toString = function toString() {
+			var result = [];
+			for(var i = 0; i < this.length; i++) {
+				var item = this[i];
+				if(item[2]) {
+					result.push("@media " + item[2] + "{" + item[1] + "}");
+				} else {
+					result.push(item[1]);
+				}
+			}
+			return result.join("");
+		};
+
+		// import a list of modules into the list
+		list.i = function(modules, mediaQuery) {
+			if(typeof modules === "string")
+				modules = [[null, modules, ""]];
+			var alreadyImportedModules = {};
+			for(var i = 0; i < this.length; i++) {
+				var id = this[i][0];
+				if(typeof id === "number")
+					alreadyImportedModules[id] = true;
+			}
+			for(i = 0; i < modules.length; i++) {
+				var item = modules[i];
+				// skip already imported module
+				// this implementation is not 100% perfect for weird media query combinations
+				//  when a module is imported multiple times with different media queries.
+				//  I hope this will never occur (Hey this way we have smaller bundles)
+				if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+					if(mediaQuery && !item[2]) {
+						item[2] = mediaQuery;
+					} else if(mediaQuery) {
+						item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+					}
+					list.push(item);
+				}
+			}
+		};
+		return list;
+	};
+
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*
+		MIT License http://www.opensource.org/licenses/mit-license.php
+		Author Tobias Koppers @sokra
+	*/
+	var stylesInDom = {},
+		memoize = function(fn) {
+			var memo;
+			return function () {
+				if (typeof memo === "undefined") memo = fn.apply(this, arguments);
+				return memo;
+			};
+		},
+		isOldIE = memoize(function() {
+			return /msie [6-9]\b/.test(window.navigator.userAgent.toLowerCase());
+		}),
+		getHeadElement = memoize(function () {
+			return document.head || document.getElementsByTagName("head")[0];
+		}),
+		singletonElement = null,
+		singletonCounter = 0,
+		styleElementsInsertedAtTop = [];
+
+	module.exports = function(list, options) {
+		if(false) {
+			if(typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
+		}
+
+		options = options || {};
+		// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+		// tags it will allow on a page
+		if (typeof options.singleton === "undefined") options.singleton = isOldIE();
+
+		// By default, add <style> tags to the bottom of <head>.
+		if (typeof options.insertAt === "undefined") options.insertAt = "bottom";
+
+		var styles = listToStyles(list);
+		addStylesToDom(styles, options);
+
+		return function update(newList) {
+			var mayRemove = [];
+			for(var i = 0; i < styles.length; i++) {
+				var item = styles[i];
+				var domStyle = stylesInDom[item.id];
+				domStyle.refs--;
+				mayRemove.push(domStyle);
+			}
+			if(newList) {
+				var newStyles = listToStyles(newList);
+				addStylesToDom(newStyles, options);
+			}
+			for(var i = 0; i < mayRemove.length; i++) {
+				var domStyle = mayRemove[i];
+				if(domStyle.refs === 0) {
+					for(var j = 0; j < domStyle.parts.length; j++)
+						domStyle.parts[j]();
+					delete stylesInDom[domStyle.id];
+				}
+			}
+		};
+	}
+
+	function addStylesToDom(styles, options) {
+		for(var i = 0; i < styles.length; i++) {
+			var item = styles[i];
+			var domStyle = stylesInDom[item.id];
+			if(domStyle) {
+				domStyle.refs++;
+				for(var j = 0; j < domStyle.parts.length; j++) {
+					domStyle.parts[j](item.parts[j]);
+				}
+				for(; j < item.parts.length; j++) {
+					domStyle.parts.push(addStyle(item.parts[j], options));
+				}
+			} else {
+				var parts = [];
+				for(var j = 0; j < item.parts.length; j++) {
+					parts.push(addStyle(item.parts[j], options));
+				}
+				stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
+			}
+		}
+	}
+
+	function listToStyles(list) {
+		var styles = [];
+		var newStyles = {};
+		for(var i = 0; i < list.length; i++) {
+			var item = list[i];
+			var id = item[0];
+			var css = item[1];
+			var media = item[2];
+			var sourceMap = item[3];
+			var part = {css: css, media: media, sourceMap: sourceMap};
+			if(!newStyles[id])
+				styles.push(newStyles[id] = {id: id, parts: [part]});
+			else
+				newStyles[id].parts.push(part);
+		}
+		return styles;
+	}
+
+	function insertStyleElement(options, styleElement) {
+		var head = getHeadElement();
+		var lastStyleElementInsertedAtTop = styleElementsInsertedAtTop[styleElementsInsertedAtTop.length - 1];
+		if (options.insertAt === "top") {
+			if(!lastStyleElementInsertedAtTop) {
+				head.insertBefore(styleElement, head.firstChild);
+			} else if(lastStyleElementInsertedAtTop.nextSibling) {
+				head.insertBefore(styleElement, lastStyleElementInsertedAtTop.nextSibling);
+			} else {
+				head.appendChild(styleElement);
+			}
+			styleElementsInsertedAtTop.push(styleElement);
+		} else if (options.insertAt === "bottom") {
+			head.appendChild(styleElement);
+		} else {
+			throw new Error("Invalid value for parameter 'insertAt'. Must be 'top' or 'bottom'.");
+		}
+	}
+
+	function removeStyleElement(styleElement) {
+		styleElement.parentNode.removeChild(styleElement);
+		var idx = styleElementsInsertedAtTop.indexOf(styleElement);
+		if(idx >= 0) {
+			styleElementsInsertedAtTop.splice(idx, 1);
+		}
+	}
+
+	function createStyleElement(options) {
+		var styleElement = document.createElement("style");
+		styleElement.type = "text/css";
+		insertStyleElement(options, styleElement);
+		return styleElement;
+	}
+
+	function createLinkElement(options) {
+		var linkElement = document.createElement("link");
+		linkElement.rel = "stylesheet";
+		insertStyleElement(options, linkElement);
+		return linkElement;
+	}
+
+	function addStyle(obj, options) {
+		var styleElement, update, remove;
+
+		if (options.singleton) {
+			var styleIndex = singletonCounter++;
+			styleElement = singletonElement || (singletonElement = createStyleElement(options));
+			update = applyToSingletonTag.bind(null, styleElement, styleIndex, false);
+			remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true);
+		} else if(obj.sourceMap &&
+			typeof URL === "function" &&
+			typeof URL.createObjectURL === "function" &&
+			typeof URL.revokeObjectURL === "function" &&
+			typeof Blob === "function" &&
+			typeof btoa === "function") {
+			styleElement = createLinkElement(options);
+			update = updateLink.bind(null, styleElement);
+			remove = function() {
+				removeStyleElement(styleElement);
+				if(styleElement.href)
+					URL.revokeObjectURL(styleElement.href);
+			};
+		} else {
+			styleElement = createStyleElement(options);
+			update = applyToTag.bind(null, styleElement);
+			remove = function() {
+				removeStyleElement(styleElement);
+			};
+		}
+
+		update(obj);
+
+		return function updateStyle(newObj) {
+			if(newObj) {
+				if(newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap)
+					return;
+				update(obj = newObj);
+			} else {
+				remove();
+			}
+		};
+	}
+
+	var replaceText = (function () {
+		var textStore = [];
+
+		return function (index, replacement) {
+			textStore[index] = replacement;
+			return textStore.filter(Boolean).join('\n');
+		};
+	})();
+
+	function applyToSingletonTag(styleElement, index, remove, obj) {
+		var css = remove ? "" : obj.css;
+
+		if (styleElement.styleSheet) {
+			styleElement.styleSheet.cssText = replaceText(index, css);
+		} else {
+			var cssNode = document.createTextNode(css);
+			var childNodes = styleElement.childNodes;
+			if (childNodes[index]) styleElement.removeChild(childNodes[index]);
+			if (childNodes.length) {
+				styleElement.insertBefore(cssNode, childNodes[index]);
+			} else {
+				styleElement.appendChild(cssNode);
+			}
+		}
+	}
+
+	function applyToTag(styleElement, obj) {
+		var css = obj.css;
+		var media = obj.media;
+		var sourceMap = obj.sourceMap;
+
+		if(media) {
+			styleElement.setAttribute("media", media)
+		}
+
+		if(styleElement.styleSheet) {
+			styleElement.styleSheet.cssText = css;
+		} else {
+			while(styleElement.firstChild) {
+				styleElement.removeChild(styleElement.firstChild);
+			}
+			styleElement.appendChild(document.createTextNode(css));
+		}
+	}
+
+	function updateLink(linkElement, obj) {
+		var css = obj.css;
+		var media = obj.media;
+		var sourceMap = obj.sourceMap;
+
+		if(sourceMap) {
+			// http://stackoverflow.com/a/26603875
+			css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
+		}
+
+		var blob = new Blob([css], { type: "text/css" });
+
+		var oldSrc = linkElement.href;
+
+		linkElement.href = URL.createObjectURL(blob);
+
+		if(oldSrc)
+			URL.revokeObjectURL(oldSrc);
+	}
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(6);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	// add the styles to the DOM
+	var update = __webpack_require__(4)(content, {});
+	if(content.locals) module.exports = content.locals;
+	// Hot Module Replacement
+	if(false) {
+		// When the styles change, update the <style> tags
+		if(!content.locals) {
+			module.hot.accept("!!./../../css-loader/index.js!./github.css", function() {
+				var newContent = require("!!./../../css-loader/index.js!./github.css");
+				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+				update(newContent);
+			});
+		}
+		// When the module is disposed, remove the <style> tags
+		module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(3)();
+	// imports
+
+
+	// module
+	exports.push([module.id, "/*\n\ngithub.com style (c) Vasily Polovnyov <vast@whiteants.net>\n\n*/\n\n.hljs {\n  display: block;\n  overflow-x: auto;\n  padding: 0.5em;\n  color: #333;\n  background: #f8f8f8;\n  -webkit-text-size-adjust: none;\n}\n\n.hljs-comment,\n.diff .hljs-header {\n  color: #998;\n  font-style: italic;\n}\n\n.hljs-keyword,\n.css .rule .hljs-keyword,\n.hljs-winutils,\n.nginx .hljs-title,\n.hljs-subst,\n.hljs-request,\n.hljs-status {\n  color: #333;\n  font-weight: bold;\n}\n\n.hljs-number,\n.hljs-hexcolor,\n.ruby .hljs-constant {\n  color: #008080;\n}\n\n.hljs-string,\n.hljs-tag .hljs-value,\n.hljs-doctag,\n.tex .hljs-formula {\n  color: #d14;\n}\n\n.hljs-title,\n.hljs-id,\n.scss .hljs-preprocessor {\n  color: #900;\n  font-weight: bold;\n}\n\n.hljs-list .hljs-keyword,\n.hljs-subst {\n  font-weight: normal;\n}\n\n.hljs-class .hljs-title,\n.hljs-type,\n.vhdl .hljs-literal,\n.tex .hljs-command {\n  color: #458;\n  font-weight: bold;\n}\n\n.hljs-tag,\n.hljs-tag .hljs-title,\n.hljs-rule .hljs-property,\n.django .hljs-tag .hljs-keyword {\n  color: #000080;\n  font-weight: normal;\n}\n\n.hljs-attribute,\n.hljs-variable,\n.lisp .hljs-body,\n.hljs-name {\n  color: #008080;\n}\n\n.hljs-regexp {\n  color: #009926;\n}\n\n.hljs-symbol,\n.ruby .hljs-symbol .hljs-string,\n.lisp .hljs-keyword,\n.clojure .hljs-keyword,\n.scheme .hljs-keyword,\n.tex .hljs-special,\n.hljs-prompt {\n  color: #990073;\n}\n\n.hljs-built_in {\n  color: #0086b3;\n}\n\n.hljs-preprocessor,\n.hljs-pragma,\n.hljs-pi,\n.hljs-doctype,\n.hljs-shebang,\n.hljs-cdata {\n  color: #999;\n  font-weight: bold;\n}\n\n.hljs-deletion {\n  background: #fdd;\n}\n\n.hljs-addition {\n  background: #dfd;\n}\n\n.diff .hljs-change {\n  background: #0086b3;\n}\n\n.hljs-chunk {\n  color: #aaa;\n}\n", ""]);
+
+	// exports
+
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(8);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	// add the styles to the DOM
+	var update = __webpack_require__(4)(content, {});
+	if(content.locals) module.exports = content.locals;
+	// Hot Module Replacement
+	if(false) {
+		// When the styles change, update the <style> tags
+		if(!content.locals) {
+			module.hot.accept("!!./node_modules/css-loader/index.js!./style.css", function() {
+				var newContent = require("!!./node_modules/css-loader/index.js!./style.css");
+				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+				update(newContent);
+			});
+		}
+		// When the module is disposed, remove the <style> tags
+		module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(3)();
+	// imports
+
+
+	// module
+	exports.push([module.id, "* {\n  box-sizing: border-box;\n}\n\n#editor-frame {\n  position: fixed;\n  left: 0;\n  top: 0;\n  width: 50%;\n  height: 100%;\n  background: rgb(252,252,252);\n  z-index: 2;\n}\n\n#rs {\n  position: fixed;\n  left: 50%;\n  width: 30px;\n  margin-left: -15px;\n  height: 100%;\n  top: 0;\n  background: rgba(0,255,0, 0.2);\n  opacity: 0;\n  cursor: col-resize;\n  z-index: 999;\n}\n\n#rs:hover {\n  opacity: 1;\n  transition: 0.2s ease-in-out;\n}\n\n#editor {\n  position: absolute;\n  top: 0;\n  left: 0;\n  height: 100%;\n  width: 100%;\n  padding: 50px 100px;\n\n  font-size: 15px;\n  font-family: \"Source Code Pro\", \"Monaco\", \"Consolas\", monospace;\n  color: rgb(26,26,26);\n\n  border: none;\n  background: transparent;\n}\n\n#editor:focus {\n  outline: none;\n}\n\n#preview {\n  position: fixed;\n  top: 0;\n  left: 50%;\n  height: 100%;\n  width: 50%;\n  overflow-y: scroll;\n  z-index: 1;\n  border-left: 1px solid #eee;\n}\n\n.markdown-body {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  padding: 50px;\n}\n\n", ""]);
+
+	// exports
+
+
+/***/ },
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -239,7 +672,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var debounce = __webpack_require__(2);
+	var debounce = __webpack_require__(10);
 
 	/** Used as the `TypeError` message for "Functions" methods. */
 	var FUNC_ERROR_TEXT = 'Expected a function';
@@ -330,7 +763,7 @@
 
 
 /***/ },
-/* 2 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -341,7 +774,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var getNative = __webpack_require__(3);
+	var getNative = __webpack_require__(11);
 
 	/** Used as the `TypeError` message for "Functions" methods. */
 	var FUNC_ERROR_TEXT = 'Expected a function';
@@ -570,7 +1003,7 @@
 
 
 /***/ },
-/* 3 */
+/* 11 */
 /***/ function(module, exports) {
 
 	/**
@@ -713,153 +1146,153 @@
 
 
 /***/ },
-/* 4 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var hljs = __webpack_require__(5);
+	var hljs = __webpack_require__(13);
 
-	hljs.registerLanguage('1c', __webpack_require__(6));
-	hljs.registerLanguage('accesslog', __webpack_require__(7));
-	hljs.registerLanguage('actionscript', __webpack_require__(8));
-	hljs.registerLanguage('apache', __webpack_require__(9));
-	hljs.registerLanguage('applescript', __webpack_require__(10));
-	hljs.registerLanguage('armasm', __webpack_require__(11));
-	hljs.registerLanguage('xml', __webpack_require__(12));
-	hljs.registerLanguage('asciidoc', __webpack_require__(13));
-	hljs.registerLanguage('aspectj', __webpack_require__(14));
-	hljs.registerLanguage('autohotkey', __webpack_require__(15));
-	hljs.registerLanguage('autoit', __webpack_require__(16));
-	hljs.registerLanguage('avrasm', __webpack_require__(17));
-	hljs.registerLanguage('axapta', __webpack_require__(18));
-	hljs.registerLanguage('bash', __webpack_require__(19));
-	hljs.registerLanguage('brainfuck', __webpack_require__(20));
-	hljs.registerLanguage('cal', __webpack_require__(21));
-	hljs.registerLanguage('capnproto', __webpack_require__(22));
-	hljs.registerLanguage('ceylon', __webpack_require__(23));
-	hljs.registerLanguage('clojure', __webpack_require__(24));
-	hljs.registerLanguage('clojure-repl', __webpack_require__(25));
-	hljs.registerLanguage('cmake', __webpack_require__(26));
-	hljs.registerLanguage('coffeescript', __webpack_require__(27));
-	hljs.registerLanguage('cpp', __webpack_require__(28));
-	hljs.registerLanguage('crmsh', __webpack_require__(29));
-	hljs.registerLanguage('crystal', __webpack_require__(30));
-	hljs.registerLanguage('cs', __webpack_require__(31));
-	hljs.registerLanguage('css', __webpack_require__(32));
-	hljs.registerLanguage('d', __webpack_require__(33));
-	hljs.registerLanguage('markdown', __webpack_require__(34));
-	hljs.registerLanguage('dart', __webpack_require__(35));
-	hljs.registerLanguage('delphi', __webpack_require__(36));
-	hljs.registerLanguage('diff', __webpack_require__(37));
-	hljs.registerLanguage('django', __webpack_require__(38));
-	hljs.registerLanguage('dns', __webpack_require__(39));
-	hljs.registerLanguage('dockerfile', __webpack_require__(40));
-	hljs.registerLanguage('dos', __webpack_require__(41));
-	hljs.registerLanguage('dust', __webpack_require__(42));
-	hljs.registerLanguage('elixir', __webpack_require__(43));
-	hljs.registerLanguage('elm', __webpack_require__(44));
-	hljs.registerLanguage('ruby', __webpack_require__(45));
-	hljs.registerLanguage('erb', __webpack_require__(46));
-	hljs.registerLanguage('erlang-repl', __webpack_require__(47));
-	hljs.registerLanguage('erlang', __webpack_require__(48));
-	hljs.registerLanguage('fix', __webpack_require__(49));
-	hljs.registerLanguage('fortran', __webpack_require__(50));
-	hljs.registerLanguage('fsharp', __webpack_require__(51));
-	hljs.registerLanguage('gams', __webpack_require__(52));
-	hljs.registerLanguage('gcode', __webpack_require__(53));
-	hljs.registerLanguage('gherkin', __webpack_require__(54));
-	hljs.registerLanguage('glsl', __webpack_require__(55));
-	hljs.registerLanguage('go', __webpack_require__(56));
-	hljs.registerLanguage('golo', __webpack_require__(57));
-	hljs.registerLanguage('gradle', __webpack_require__(58));
-	hljs.registerLanguage('groovy', __webpack_require__(59));
-	hljs.registerLanguage('haml', __webpack_require__(60));
-	hljs.registerLanguage('handlebars', __webpack_require__(61));
-	hljs.registerLanguage('haskell', __webpack_require__(62));
-	hljs.registerLanguage('haxe', __webpack_require__(63));
-	hljs.registerLanguage('http', __webpack_require__(64));
-	hljs.registerLanguage('inform7', __webpack_require__(65));
-	hljs.registerLanguage('ini', __webpack_require__(66));
-	hljs.registerLanguage('irpf90', __webpack_require__(67));
-	hljs.registerLanguage('java', __webpack_require__(68));
-	hljs.registerLanguage('javascript', __webpack_require__(69));
-	hljs.registerLanguage('json', __webpack_require__(70));
-	hljs.registerLanguage('julia', __webpack_require__(71));
-	hljs.registerLanguage('kotlin', __webpack_require__(72));
-	hljs.registerLanguage('lasso', __webpack_require__(73));
-	hljs.registerLanguage('less', __webpack_require__(74));
-	hljs.registerLanguage('lisp', __webpack_require__(75));
-	hljs.registerLanguage('livecodeserver', __webpack_require__(76));
-	hljs.registerLanguage('livescript', __webpack_require__(77));
-	hljs.registerLanguage('lua', __webpack_require__(78));
-	hljs.registerLanguage('makefile', __webpack_require__(79));
-	hljs.registerLanguage('mathematica', __webpack_require__(80));
-	hljs.registerLanguage('matlab', __webpack_require__(81));
-	hljs.registerLanguage('mel', __webpack_require__(82));
-	hljs.registerLanguage('mercury', __webpack_require__(83));
-	hljs.registerLanguage('mizar', __webpack_require__(84));
-	hljs.registerLanguage('perl', __webpack_require__(85));
-	hljs.registerLanguage('mojolicious', __webpack_require__(86));
-	hljs.registerLanguage('monkey', __webpack_require__(87));
-	hljs.registerLanguage('nginx', __webpack_require__(88));
-	hljs.registerLanguage('nimrod', __webpack_require__(89));
-	hljs.registerLanguage('nix', __webpack_require__(90));
-	hljs.registerLanguage('nsis', __webpack_require__(91));
-	hljs.registerLanguage('objectivec', __webpack_require__(92));
-	hljs.registerLanguage('ocaml', __webpack_require__(93));
-	hljs.registerLanguage('openscad', __webpack_require__(94));
-	hljs.registerLanguage('oxygene', __webpack_require__(95));
-	hljs.registerLanguage('parser3', __webpack_require__(96));
-	hljs.registerLanguage('pf', __webpack_require__(97));
-	hljs.registerLanguage('php', __webpack_require__(98));
-	hljs.registerLanguage('powershell', __webpack_require__(99));
-	hljs.registerLanguage('processing', __webpack_require__(100));
-	hljs.registerLanguage('profile', __webpack_require__(101));
-	hljs.registerLanguage('prolog', __webpack_require__(102));
-	hljs.registerLanguage('protobuf', __webpack_require__(103));
-	hljs.registerLanguage('puppet', __webpack_require__(104));
-	hljs.registerLanguage('python', __webpack_require__(105));
-	hljs.registerLanguage('q', __webpack_require__(106));
-	hljs.registerLanguage('r', __webpack_require__(107));
-	hljs.registerLanguage('rib', __webpack_require__(108));
-	hljs.registerLanguage('roboconf', __webpack_require__(109));
-	hljs.registerLanguage('rsl', __webpack_require__(110));
-	hljs.registerLanguage('ruleslanguage', __webpack_require__(111));
-	hljs.registerLanguage('rust', __webpack_require__(112));
-	hljs.registerLanguage('scala', __webpack_require__(113));
-	hljs.registerLanguage('scheme', __webpack_require__(114));
-	hljs.registerLanguage('scilab', __webpack_require__(115));
-	hljs.registerLanguage('scss', __webpack_require__(116));
-	hljs.registerLanguage('smali', __webpack_require__(117));
-	hljs.registerLanguage('smalltalk', __webpack_require__(118));
-	hljs.registerLanguage('sml', __webpack_require__(119));
-	hljs.registerLanguage('sqf', __webpack_require__(120));
-	hljs.registerLanguage('sql', __webpack_require__(121));
-	hljs.registerLanguage('stata', __webpack_require__(122));
-	hljs.registerLanguage('step21', __webpack_require__(123));
-	hljs.registerLanguage('stylus', __webpack_require__(124));
-	hljs.registerLanguage('swift', __webpack_require__(125));
-	hljs.registerLanguage('tcl', __webpack_require__(126));
-	hljs.registerLanguage('tex', __webpack_require__(127));
-	hljs.registerLanguage('thrift', __webpack_require__(128));
-	hljs.registerLanguage('tp', __webpack_require__(129));
-	hljs.registerLanguage('twig', __webpack_require__(130));
-	hljs.registerLanguage('typescript', __webpack_require__(131));
-	hljs.registerLanguage('vala', __webpack_require__(132));
-	hljs.registerLanguage('vbnet', __webpack_require__(133));
-	hljs.registerLanguage('vbscript', __webpack_require__(134));
-	hljs.registerLanguage('vbscript-html', __webpack_require__(135));
-	hljs.registerLanguage('verilog', __webpack_require__(136));
-	hljs.registerLanguage('vhdl', __webpack_require__(137));
-	hljs.registerLanguage('vim', __webpack_require__(138));
-	hljs.registerLanguage('x86asm', __webpack_require__(139));
-	hljs.registerLanguage('xl', __webpack_require__(140));
-	hljs.registerLanguage('xquery', __webpack_require__(141));
-	hljs.registerLanguage('zephir', __webpack_require__(142));
+	hljs.registerLanguage('1c', __webpack_require__(14));
+	hljs.registerLanguage('accesslog', __webpack_require__(15));
+	hljs.registerLanguage('actionscript', __webpack_require__(16));
+	hljs.registerLanguage('apache', __webpack_require__(17));
+	hljs.registerLanguage('applescript', __webpack_require__(18));
+	hljs.registerLanguage('armasm', __webpack_require__(19));
+	hljs.registerLanguage('xml', __webpack_require__(20));
+	hljs.registerLanguage('asciidoc', __webpack_require__(21));
+	hljs.registerLanguage('aspectj', __webpack_require__(22));
+	hljs.registerLanguage('autohotkey', __webpack_require__(23));
+	hljs.registerLanguage('autoit', __webpack_require__(24));
+	hljs.registerLanguage('avrasm', __webpack_require__(25));
+	hljs.registerLanguage('axapta', __webpack_require__(26));
+	hljs.registerLanguage('bash', __webpack_require__(27));
+	hljs.registerLanguage('brainfuck', __webpack_require__(28));
+	hljs.registerLanguage('cal', __webpack_require__(29));
+	hljs.registerLanguage('capnproto', __webpack_require__(30));
+	hljs.registerLanguage('ceylon', __webpack_require__(31));
+	hljs.registerLanguage('clojure', __webpack_require__(32));
+	hljs.registerLanguage('clojure-repl', __webpack_require__(33));
+	hljs.registerLanguage('cmake', __webpack_require__(34));
+	hljs.registerLanguage('coffeescript', __webpack_require__(35));
+	hljs.registerLanguage('cpp', __webpack_require__(36));
+	hljs.registerLanguage('crmsh', __webpack_require__(37));
+	hljs.registerLanguage('crystal', __webpack_require__(38));
+	hljs.registerLanguage('cs', __webpack_require__(39));
+	hljs.registerLanguage('css', __webpack_require__(40));
+	hljs.registerLanguage('d', __webpack_require__(41));
+	hljs.registerLanguage('markdown', __webpack_require__(42));
+	hljs.registerLanguage('dart', __webpack_require__(43));
+	hljs.registerLanguage('delphi', __webpack_require__(44));
+	hljs.registerLanguage('diff', __webpack_require__(45));
+	hljs.registerLanguage('django', __webpack_require__(46));
+	hljs.registerLanguage('dns', __webpack_require__(47));
+	hljs.registerLanguage('dockerfile', __webpack_require__(48));
+	hljs.registerLanguage('dos', __webpack_require__(49));
+	hljs.registerLanguage('dust', __webpack_require__(50));
+	hljs.registerLanguage('elixir', __webpack_require__(51));
+	hljs.registerLanguage('elm', __webpack_require__(52));
+	hljs.registerLanguage('ruby', __webpack_require__(53));
+	hljs.registerLanguage('erb', __webpack_require__(54));
+	hljs.registerLanguage('erlang-repl', __webpack_require__(55));
+	hljs.registerLanguage('erlang', __webpack_require__(56));
+	hljs.registerLanguage('fix', __webpack_require__(57));
+	hljs.registerLanguage('fortran', __webpack_require__(58));
+	hljs.registerLanguage('fsharp', __webpack_require__(59));
+	hljs.registerLanguage('gams', __webpack_require__(60));
+	hljs.registerLanguage('gcode', __webpack_require__(61));
+	hljs.registerLanguage('gherkin', __webpack_require__(62));
+	hljs.registerLanguage('glsl', __webpack_require__(63));
+	hljs.registerLanguage('go', __webpack_require__(64));
+	hljs.registerLanguage('golo', __webpack_require__(65));
+	hljs.registerLanguage('gradle', __webpack_require__(66));
+	hljs.registerLanguage('groovy', __webpack_require__(67));
+	hljs.registerLanguage('haml', __webpack_require__(68));
+	hljs.registerLanguage('handlebars', __webpack_require__(69));
+	hljs.registerLanguage('haskell', __webpack_require__(70));
+	hljs.registerLanguage('haxe', __webpack_require__(71));
+	hljs.registerLanguage('http', __webpack_require__(72));
+	hljs.registerLanguage('inform7', __webpack_require__(73));
+	hljs.registerLanguage('ini', __webpack_require__(74));
+	hljs.registerLanguage('irpf90', __webpack_require__(75));
+	hljs.registerLanguage('java', __webpack_require__(76));
+	hljs.registerLanguage('javascript', __webpack_require__(77));
+	hljs.registerLanguage('json', __webpack_require__(78));
+	hljs.registerLanguage('julia', __webpack_require__(79));
+	hljs.registerLanguage('kotlin', __webpack_require__(80));
+	hljs.registerLanguage('lasso', __webpack_require__(81));
+	hljs.registerLanguage('less', __webpack_require__(82));
+	hljs.registerLanguage('lisp', __webpack_require__(83));
+	hljs.registerLanguage('livecodeserver', __webpack_require__(84));
+	hljs.registerLanguage('livescript', __webpack_require__(85));
+	hljs.registerLanguage('lua', __webpack_require__(86));
+	hljs.registerLanguage('makefile', __webpack_require__(87));
+	hljs.registerLanguage('mathematica', __webpack_require__(88));
+	hljs.registerLanguage('matlab', __webpack_require__(89));
+	hljs.registerLanguage('mel', __webpack_require__(90));
+	hljs.registerLanguage('mercury', __webpack_require__(91));
+	hljs.registerLanguage('mizar', __webpack_require__(92));
+	hljs.registerLanguage('perl', __webpack_require__(93));
+	hljs.registerLanguage('mojolicious', __webpack_require__(94));
+	hljs.registerLanguage('monkey', __webpack_require__(95));
+	hljs.registerLanguage('nginx', __webpack_require__(96));
+	hljs.registerLanguage('nimrod', __webpack_require__(97));
+	hljs.registerLanguage('nix', __webpack_require__(98));
+	hljs.registerLanguage('nsis', __webpack_require__(99));
+	hljs.registerLanguage('objectivec', __webpack_require__(100));
+	hljs.registerLanguage('ocaml', __webpack_require__(101));
+	hljs.registerLanguage('openscad', __webpack_require__(102));
+	hljs.registerLanguage('oxygene', __webpack_require__(103));
+	hljs.registerLanguage('parser3', __webpack_require__(104));
+	hljs.registerLanguage('pf', __webpack_require__(105));
+	hljs.registerLanguage('php', __webpack_require__(106));
+	hljs.registerLanguage('powershell', __webpack_require__(107));
+	hljs.registerLanguage('processing', __webpack_require__(108));
+	hljs.registerLanguage('profile', __webpack_require__(109));
+	hljs.registerLanguage('prolog', __webpack_require__(110));
+	hljs.registerLanguage('protobuf', __webpack_require__(111));
+	hljs.registerLanguage('puppet', __webpack_require__(112));
+	hljs.registerLanguage('python', __webpack_require__(113));
+	hljs.registerLanguage('q', __webpack_require__(114));
+	hljs.registerLanguage('r', __webpack_require__(115));
+	hljs.registerLanguage('rib', __webpack_require__(116));
+	hljs.registerLanguage('roboconf', __webpack_require__(117));
+	hljs.registerLanguage('rsl', __webpack_require__(118));
+	hljs.registerLanguage('ruleslanguage', __webpack_require__(119));
+	hljs.registerLanguage('rust', __webpack_require__(120));
+	hljs.registerLanguage('scala', __webpack_require__(121));
+	hljs.registerLanguage('scheme', __webpack_require__(122));
+	hljs.registerLanguage('scilab', __webpack_require__(123));
+	hljs.registerLanguage('scss', __webpack_require__(124));
+	hljs.registerLanguage('smali', __webpack_require__(125));
+	hljs.registerLanguage('smalltalk', __webpack_require__(126));
+	hljs.registerLanguage('sml', __webpack_require__(127));
+	hljs.registerLanguage('sqf', __webpack_require__(128));
+	hljs.registerLanguage('sql', __webpack_require__(129));
+	hljs.registerLanguage('stata', __webpack_require__(130));
+	hljs.registerLanguage('step21', __webpack_require__(131));
+	hljs.registerLanguage('stylus', __webpack_require__(132));
+	hljs.registerLanguage('swift', __webpack_require__(133));
+	hljs.registerLanguage('tcl', __webpack_require__(134));
+	hljs.registerLanguage('tex', __webpack_require__(135));
+	hljs.registerLanguage('thrift', __webpack_require__(136));
+	hljs.registerLanguage('tp', __webpack_require__(137));
+	hljs.registerLanguage('twig', __webpack_require__(138));
+	hljs.registerLanguage('typescript', __webpack_require__(139));
+	hljs.registerLanguage('vala', __webpack_require__(140));
+	hljs.registerLanguage('vbnet', __webpack_require__(141));
+	hljs.registerLanguage('vbscript', __webpack_require__(142));
+	hljs.registerLanguage('vbscript-html', __webpack_require__(143));
+	hljs.registerLanguage('verilog', __webpack_require__(144));
+	hljs.registerLanguage('vhdl', __webpack_require__(145));
+	hljs.registerLanguage('vim', __webpack_require__(146));
+	hljs.registerLanguage('x86asm', __webpack_require__(147));
+	hljs.registerLanguage('xl', __webpack_require__(148));
+	hljs.registerLanguage('xquery', __webpack_require__(149));
+	hljs.registerLanguage('zephir', __webpack_require__(150));
 
 	module.exports = hljs;
 
 /***/ },
-/* 5 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -1636,7 +2069,7 @@
 
 
 /***/ },
-/* 6 */
+/* 14 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs){
@@ -1726,7 +2159,7 @@
 	};
 
 /***/ },
-/* 7 */
+/* 15 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -1768,7 +2201,7 @@
 	};
 
 /***/ },
-/* 8 */
+/* 16 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -1847,7 +2280,7 @@
 	};
 
 /***/ },
-/* 9 */
+/* 17 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -1897,7 +2330,7 @@
 	};
 
 /***/ },
-/* 10 */
+/* 18 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -1998,7 +2431,7 @@
 	};
 
 /***/ },
-/* 11 */
+/* 19 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -2094,7 +2527,7 @@
 	};
 
 /***/ },
-/* 12 */
+/* 20 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -2201,7 +2634,7 @@
 	};
 
 /***/ },
-/* 13 */
+/* 21 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -2397,7 +2830,7 @@
 	};
 
 /***/ },
-/* 14 */
+/* 22 */
 /***/ function(module, exports) {
 
 	module.exports = function (hljs) {
@@ -2539,7 +2972,7 @@
 	};
 
 /***/ },
-/* 15 */
+/* 23 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -2605,7 +3038,7 @@
 	};
 
 /***/ },
-/* 16 */
+/* 24 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -4364,7 +4797,7 @@
 	};
 
 /***/ },
-/* 17 */
+/* 25 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -4430,7 +4863,7 @@
 	};
 
 /***/ },
-/* 18 */
+/* 26 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -4465,7 +4898,7 @@
 	};
 
 /***/ },
-/* 19 */
+/* 27 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -4545,7 +4978,7 @@
 	};
 
 /***/ },
-/* 20 */
+/* 28 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs){
@@ -4586,7 +5019,7 @@
 	};
 
 /***/ },
-/* 21 */
+/* 29 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -4670,7 +5103,7 @@
 	};
 
 /***/ },
-/* 22 */
+/* 30 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -4723,7 +5156,7 @@
 	};
 
 /***/ },
-/* 23 */
+/* 31 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -4795,7 +5228,7 @@
 	};
 
 /***/ },
-/* 24 */
+/* 32 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -4896,7 +5329,7 @@
 	};
 
 /***/ },
-/* 25 */
+/* 33 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -4915,7 +5348,7 @@
 	};
 
 /***/ },
-/* 26 */
+/* 34 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -4958,7 +5391,7 @@
 	};
 
 /***/ },
-/* 27 */
+/* 35 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -5103,7 +5536,7 @@
 	};
 
 /***/ },
-/* 28 */
+/* 36 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -5248,7 +5681,7 @@
 	};
 
 /***/ },
-/* 29 */
+/* 37 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -5350,7 +5783,7 @@
 	};
 
 /***/ },
-/* 30 */
+/* 38 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -5546,7 +5979,7 @@
 	};
 
 /***/ },
-/* 31 */
+/* 39 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -5669,7 +6102,7 @@
 	};
 
 /***/ },
-/* 32 */
+/* 40 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -5775,7 +6208,7 @@
 	};
 
 /***/ },
-/* 33 */
+/* 41 */
 /***/ function(module, exports) {
 
 	module.exports = /**
@@ -6037,7 +6470,7 @@
 	};
 
 /***/ },
-/* 34 */
+/* 42 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6143,7 +6576,7 @@
 	};
 
 /***/ },
-/* 35 */
+/* 43 */
 /***/ function(module, exports) {
 
 	module.exports = function (hljs) {
@@ -6248,7 +6681,7 @@
 	};
 
 /***/ },
-/* 36 */
+/* 44 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6319,7 +6752,7 @@
 	};
 
 /***/ },
-/* 37 */
+/* 45 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6363,7 +6796,7 @@
 	};
 
 /***/ },
-/* 38 */
+/* 46 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6417,7 +6850,7 @@
 	};
 
 /***/ },
-/* 39 */
+/* 47 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6449,7 +6882,7 @@
 	};
 
 /***/ },
-/* 40 */
+/* 48 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6488,7 +6921,7 @@
 	};
 
 /***/ },
-/* 41 */
+/* 49 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6541,7 +6974,7 @@
 	};
 
 /***/ },
-/* 42 */
+/* 50 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6580,7 +7013,7 @@
 	};
 
 /***/ },
-/* 43 */
+/* 51 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6686,7 +7119,7 @@
 	};
 
 /***/ },
-/* 44 */
+/* 52 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6776,7 +7209,7 @@
 	};
 
 /***/ },
-/* 45 */
+/* 53 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6950,7 +7383,7 @@
 	};
 
 /***/ },
-/* 46 */
+/* 54 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6969,7 +7402,7 @@
 	};
 
 /***/ },
-/* 47 */
+/* 55 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7021,7 +7454,7 @@
 	};
 
 /***/ },
-/* 48 */
+/* 56 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7177,7 +7610,7 @@
 	};
 
 /***/ },
-/* 49 */
+/* 57 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7210,7 +7643,7 @@
 	};
 
 /***/ },
-/* 50 */
+/* 58 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7285,7 +7718,7 @@
 	};
 
 /***/ },
-/* 51 */
+/* 59 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7348,7 +7781,7 @@
 	};
 
 /***/ },
-/* 52 */
+/* 60 */
 /***/ function(module, exports) {
 
 	module.exports = function (hljs) {
@@ -7389,7 +7822,7 @@
 	};
 
 /***/ },
-/* 53 */
+/* 61 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7466,7 +7899,7 @@
 	};
 
 /***/ },
-/* 54 */
+/* 62 */
 /***/ function(module, exports) {
 
 	module.exports = function (hljs) {
@@ -7503,7 +7936,7 @@
 	};
 
 /***/ },
-/* 55 */
+/* 63 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7601,7 +8034,7 @@
 	};
 
 /***/ },
-/* 56 */
+/* 64 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7644,7 +8077,7 @@
 	};
 
 /***/ },
-/* 57 */
+/* 65 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7672,7 +8105,7 @@
 	};
 
 /***/ },
-/* 58 */
+/* 66 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7711,7 +8144,7 @@
 	};
 
 /***/ },
-/* 59 */
+/* 67 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7803,7 +8236,7 @@
 	};
 
 /***/ },
-/* 60 */
+/* 68 */
 /***/ function(module, exports) {
 
 	module.exports = // TODO support filter tags like :javascript, support inline HTML
@@ -7915,7 +8348,7 @@
 	};
 
 /***/ },
-/* 61 */
+/* 69 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7952,7 +8385,7 @@
 	};
 
 /***/ },
-/* 62 */
+/* 70 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8080,7 +8513,7 @@
 	};
 
 /***/ },
-/* 63 */
+/* 71 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8145,7 +8578,7 @@
 	};
 
 /***/ },
-/* 64 */
+/* 72 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8184,7 +8617,7 @@
 	};
 
 /***/ },
-/* 65 */
+/* 73 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8246,7 +8679,7 @@
 	};
 
 /***/ },
-/* 66 */
+/* 74 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8310,7 +8743,7 @@
 	};
 
 /***/ },
-/* 67 */
+/* 75 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8390,7 +8823,7 @@
 	};
 
 /***/ },
-/* 68 */
+/* 76 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8494,7 +8927,7 @@
 	};
 
 /***/ },
-/* 69 */
+/* 77 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8610,7 +9043,7 @@
 	};
 
 /***/ },
-/* 70 */
+/* 78 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8652,7 +9085,7 @@
 	};
 
 /***/ },
-/* 71 */
+/* 79 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8817,7 +9250,7 @@
 	};
 
 /***/ },
-/* 72 */
+/* 80 */
 /***/ function(module, exports) {
 
 	module.exports = function (hljs) {
@@ -8922,7 +9355,7 @@
 	};
 
 /***/ },
-/* 73 */
+/* 81 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9112,7 +9545,7 @@
 	};
 
 /***/ },
-/* 74 */
+/* 82 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9253,7 +9686,7 @@
 	};
 
 /***/ },
-/* 75 */
+/* 83 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9364,7 +9797,7 @@
 	};
 
 /***/ },
-/* 76 */
+/* 84 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9526,7 +9959,7 @@
 	};
 
 /***/ },
-/* 77 */
+/* 85 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9681,7 +10114,7 @@
 	};
 
 /***/ },
-/* 78 */
+/* 86 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9741,7 +10174,7 @@
 	};
 
 /***/ },
-/* 79 */
+/* 87 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9791,7 +10224,7 @@
 	};
 
 /***/ },
-/* 80 */
+/* 88 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9854,7 +10287,7 @@
 	};
 
 /***/ },
-/* 81 */
+/* 89 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9949,7 +10382,7 @@
 	};
 
 /***/ },
-/* 82 */
+/* 90 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10183,7 +10616,7 @@
 	};
 
 /***/ },
-/* 83 */
+/* 91 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10276,7 +10709,7 @@
 	};
 
 /***/ },
-/* 84 */
+/* 92 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10299,7 +10732,7 @@
 	};
 
 /***/ },
-/* 85 */
+/* 93 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10460,7 +10893,7 @@
 	};
 
 /***/ },
-/* 86 */
+/* 94 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10489,7 +10922,7 @@
 	};
 
 /***/ },
-/* 87 */
+/* 95 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10572,7 +11005,7 @@
 	};
 
 /***/ },
-/* 88 */
+/* 96 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10658,7 +11091,7 @@
 	};
 
 /***/ },
-/* 89 */
+/* 97 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10714,7 +11147,7 @@
 	};
 
 /***/ },
-/* 90 */
+/* 98 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10769,7 +11202,7 @@
 	};
 
 /***/ },
-/* 91 */
+/* 99 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10861,7 +11294,7 @@
 	};
 
 /***/ },
-/* 92 */
+/* 100 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10944,7 +11377,7 @@
 	};
 
 /***/ },
-/* 93 */
+/* 101 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11019,7 +11452,7 @@
 	};
 
 /***/ },
-/* 94 */
+/* 102 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11081,7 +11514,7 @@
 	};
 
 /***/ },
-/* 95 */
+/* 103 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11154,7 +11587,7 @@
 	};
 
 /***/ },
-/* 96 */
+/* 104 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11206,7 +11639,7 @@
 	};
 
 /***/ },
-/* 97 */
+/* 105 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11262,7 +11695,7 @@
 	};
 
 /***/ },
-/* 98 */
+/* 106 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11391,7 +11824,7 @@
 	};
 
 /***/ },
-/* 99 */
+/* 107 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11443,7 +11876,7 @@
 	};
 
 /***/ },
-/* 100 */
+/* 108 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11495,7 +11928,7 @@
 	};
 
 /***/ },
-/* 101 */
+/* 109 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11541,7 +11974,7 @@
 	};
 
 /***/ },
-/* 102 */
+/* 110 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11634,7 +12067,7 @@
 	};
 
 /***/ },
-/* 103 */
+/* 111 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11675,7 +12108,7 @@
 	};
 
 /***/ },
-/* 104 */
+/* 112 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11787,7 +12220,7 @@
 	};
 
 /***/ },
-/* 105 */
+/* 113 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11876,7 +12309,7 @@
 	};
 
 /***/ },
-/* 106 */
+/* 114 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11903,7 +12336,7 @@
 	};
 
 /***/ },
-/* 107 */
+/* 115 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11977,7 +12410,7 @@
 	};
 
 /***/ },
-/* 108 */
+/* 116 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12008,7 +12441,7 @@
 	};
 
 /***/ },
-/* 109 */
+/* 117 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12072,7 +12505,7 @@
 	};
 
 /***/ },
-/* 110 */
+/* 118 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12113,7 +12546,7 @@
 	};
 
 /***/ },
-/* 111 */
+/* 119 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12178,7 +12611,7 @@
 	};
 
 /***/ },
-/* 112 */
+/* 120 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12268,7 +12701,7 @@
 	};
 
 /***/ },
-/* 113 */
+/* 121 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12335,7 +12768,7 @@
 	};
 
 /***/ },
-/* 114 */
+/* 122 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12461,7 +12894,7 @@
 	};
 
 /***/ },
-/* 115 */
+/* 123 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12520,7 +12953,7 @@
 	};
 
 /***/ },
-/* 116 */
+/* 124 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12641,7 +13074,7 @@
 	};
 
 /***/ },
-/* 117 */
+/* 125 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12728,7 +13161,7 @@
 	};
 
 /***/ },
-/* 118 */
+/* 126 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12785,7 +13218,7 @@
 	};
 
 /***/ },
-/* 119 */
+/* 127 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12854,7 +13287,7 @@
 	};
 
 /***/ },
-/* 120 */
+/* 128 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12954,7 +13387,7 @@
 	};
 
 /***/ },
-/* 121 */
+/* 129 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13118,7 +13551,7 @@
 	};
 
 /***/ },
-/* 122 */
+/* 130 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13160,7 +13593,7 @@
 	};
 
 /***/ },
-/* 123 */
+/* 131 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13216,7 +13649,7 @@
 	};
 
 /***/ },
-/* 124 */
+/* 132 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13663,7 +14096,7 @@
 	};
 
 /***/ },
-/* 125 */
+/* 133 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13787,7 +14220,7 @@
 	};
 
 /***/ },
-/* 126 */
+/* 134 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13853,7 +14286,7 @@
 	};
 
 /***/ },
-/* 127 */
+/* 135 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13912,7 +14345,7 @@
 	};
 
 /***/ },
-/* 128 */
+/* 136 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13951,7 +14384,7 @@
 	};
 
 /***/ },
-/* 129 */
+/* 137 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14039,7 +14472,7 @@
 	};
 
 /***/ },
-/* 130 */
+/* 138 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14100,7 +14533,7 @@
 	};
 
 /***/ },
-/* 131 */
+/* 139 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14202,7 +14635,7 @@
 	};
 
 /***/ },
-/* 132 */
+/* 140 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14261,7 +14694,7 @@
 	};
 
 /***/ },
-/* 133 */
+/* 141 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14321,7 +14754,7 @@
 	};
 
 /***/ },
-/* 134 */
+/* 142 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14364,7 +14797,7 @@
 	};
 
 /***/ },
-/* 135 */
+/* 143 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14380,7 +14813,7 @@
 	};
 
 /***/ },
-/* 136 */
+/* 144 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14434,7 +14867,7 @@
 	};
 
 /***/ },
-/* 137 */
+/* 145 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14494,7 +14927,7 @@
 	};
 
 /***/ },
-/* 138 */
+/* 146 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14561,7 +14994,7 @@
 	};
 
 /***/ },
-/* 139 */
+/* 147 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14701,7 +15134,7 @@
 	};
 
 /***/ },
-/* 140 */
+/* 148 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14792,7 +15225,7 @@
 	};
 
 /***/ },
-/* 141 */
+/* 149 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14869,7 +15302,7 @@
 	};
 
 /***/ },
-/* 142 */
+/* 150 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14980,7 +15413,7 @@
 	};
 
 /***/ },
-/* 143 */
+/* 151 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
@@ -16270,396 +16703,6 @@
 	}());
 
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 144 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// style-loader: Adds some css to the DOM by adding a <style> tag
-
-	// load the styles
-	var content = __webpack_require__(145);
-	if(typeof content === 'string') content = [[module.id, content, '']];
-	// add the styles to the DOM
-	var update = __webpack_require__(147)(content, {});
-	if(content.locals) module.exports = content.locals;
-	// Hot Module Replacement
-	if(false) {
-		// When the styles change, update the <style> tags
-		if(!content.locals) {
-			module.hot.accept("!!./../css-loader/index.js!./github-markdown.css", function() {
-				var newContent = require("!!./../css-loader/index.js!./github-markdown.css");
-				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-				update(newContent);
-			});
-		}
-		// When the module is disposed, remove the <style> tags
-		module.hot.dispose(function() { update(); });
-	}
-
-/***/ },
-/* 145 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(146)();
-	// imports
-
-
-	// module
-	exports.push([module.id, "@font-face {\n  font-family: octicons-anchor;\n  src: url(data:font/woff;charset=utf-8;base64,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) format('woff');\n}\n\n.markdown-body {\n  -webkit-text-size-adjust: 100%;\n  text-size-adjust: 100%;\n  color: #333;\n  font-family: \"Helvetica Neue\", Helvetica, \"Segoe UI\", Arial, freesans, sans-serif;\n  font-size: 16px;\n  line-height: 1.6;\n  word-wrap: break-word;\n}\n\n.markdown-body a {\n  background-color: transparent;\n}\n\n.markdown-body a:active,\n.markdown-body a:hover {\n  outline: 0;\n}\n\n.markdown-body strong {\n  font-weight: bold;\n}\n\n.markdown-body h1 {\n  font-size: 2em;\n  margin: 0.67em 0;\n}\n\n.markdown-body img {\n  border: 0;\n}\n\n.markdown-body hr {\n  box-sizing: content-box;\n  height: 0;\n}\n\n.markdown-body pre {\n  overflow: auto;\n}\n\n.markdown-body code,\n.markdown-body kbd,\n.markdown-body pre {\n  font-family: monospace, monospace;\n  font-size: 1em;\n}\n\n.markdown-body input {\n  color: inherit;\n  font: inherit;\n  margin: 0;\n}\n\n.markdown-body html input[disabled] {\n  cursor: default;\n}\n\n.markdown-body input {\n  line-height: normal;\n}\n\n.markdown-body input[type=\"checkbox\"] {\n  box-sizing: border-box;\n  padding: 0;\n}\n\n.markdown-body table {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n\n.markdown-body td,\n.markdown-body th {\n  padding: 0;\n}\n\n.markdown-body * {\n  box-sizing: border-box;\n}\n\n.markdown-body input {\n  font: 13px/1.4 Helvetica, arial, nimbussansl, liberationsans, freesans, clean, sans-serif, \"Segoe UI Emoji\", \"Segoe UI Symbol\";\n}\n\n.markdown-body a {\n  color: #4078c0;\n  text-decoration: none;\n}\n\n.markdown-body a:hover,\n.markdown-body a:active {\n  text-decoration: underline;\n}\n\n.markdown-body hr {\n  height: 0;\n  margin: 15px 0;\n  overflow: hidden;\n  background: transparent;\n  border: 0;\n  border-bottom: 1px solid #ddd;\n}\n\n.markdown-body hr:before {\n  display: table;\n  content: \"\";\n}\n\n.markdown-body hr:after {\n  display: table;\n  clear: both;\n  content: \"\";\n}\n\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6 {\n  margin-top: 15px;\n  margin-bottom: 15px;\n  line-height: 1.1;\n}\n\n.markdown-body h1 {\n  font-size: 30px;\n}\n\n.markdown-body h2 {\n  font-size: 21px;\n}\n\n.markdown-body h3 {\n  font-size: 16px;\n}\n\n.markdown-body h4 {\n  font-size: 14px;\n}\n\n.markdown-body h5 {\n  font-size: 12px;\n}\n\n.markdown-body h6 {\n  font-size: 11px;\n}\n\n.markdown-body blockquote {\n  margin: 0;\n}\n\n.markdown-body ul,\n.markdown-body ol {\n  padding: 0;\n  margin-top: 0;\n  margin-bottom: 0;\n}\n\n.markdown-body ol ol,\n.markdown-body ul ol {\n  list-style-type: lower-roman;\n}\n\n.markdown-body ul ul ol,\n.markdown-body ul ol ol,\n.markdown-body ol ul ol,\n.markdown-body ol ol ol {\n  list-style-type: lower-alpha;\n}\n\n.markdown-body dd {\n  margin-left: 0;\n}\n\n.markdown-body code {\n  font-family: Consolas, \"Liberation Mono\", Menlo, Courier, monospace;\n  font-size: 12px;\n}\n\n.markdown-body pre {\n  margin-top: 0;\n  margin-bottom: 0;\n  font: 12px Consolas, \"Liberation Mono\", Menlo, Courier, monospace;\n}\n\n.markdown-body .select::-ms-expand {\n  opacity: 0;\n}\n\n.markdown-body .octicon {\n  font: normal normal normal 16px/1 octicons-anchor;\n  display: inline-block;\n  text-decoration: none;\n  text-rendering: auto;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n  user-select: none;\n}\n\n.markdown-body .octicon-link:before {\n  content: '\\F05C';\n}\n\n.markdown-body>*:first-child {\n  margin-top: 0 !important;\n}\n\n.markdown-body>*:last-child {\n  margin-bottom: 0 !important;\n}\n\n.markdown-body a:not([href]) {\n  color: inherit;\n  text-decoration: none;\n}\n\n.markdown-body .anchor {\n  display: inline-block;\n  padding-right: 2px;\n  margin-left: -18px;\n}\n\n.markdown-body .anchor:focus {\n  outline: none;\n}\n\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6 {\n  margin-top: 1em;\n  margin-bottom: 16px;\n  font-weight: bold;\n  line-height: 1.4;\n}\n\n.markdown-body h1 .octicon-link,\n.markdown-body h2 .octicon-link,\n.markdown-body h3 .octicon-link,\n.markdown-body h4 .octicon-link,\n.markdown-body h5 .octicon-link,\n.markdown-body h6 .octicon-link {\n  color: #000;\n  vertical-align: middle;\n  visibility: hidden;\n}\n\n.markdown-body h1:hover .anchor,\n.markdown-body h2:hover .anchor,\n.markdown-body h3:hover .anchor,\n.markdown-body h4:hover .anchor,\n.markdown-body h5:hover .anchor,\n.markdown-body h6:hover .anchor {\n  text-decoration: none;\n}\n\n.markdown-body h1:hover .anchor .octicon-link,\n.markdown-body h2:hover .anchor .octicon-link,\n.markdown-body h3:hover .anchor .octicon-link,\n.markdown-body h4:hover .anchor .octicon-link,\n.markdown-body h5:hover .anchor .octicon-link,\n.markdown-body h6:hover .anchor .octicon-link {\n  visibility: visible;\n}\n\n.markdown-body h1 {\n  padding-bottom: 0.3em;\n  font-size: 2.25em;\n  line-height: 1.2;\n  border-bottom: 1px solid #eee;\n}\n\n.markdown-body h1 .anchor {\n  line-height: 1;\n}\n\n.markdown-body h2 {\n  padding-bottom: 0.3em;\n  font-size: 1.75em;\n  line-height: 1.225;\n  border-bottom: 1px solid #eee;\n}\n\n.markdown-body h2 .anchor {\n  line-height: 1;\n}\n\n.markdown-body h3 {\n  font-size: 1.5em;\n  line-height: 1.43;\n}\n\n.markdown-body h3 .anchor {\n  line-height: 1.2;\n}\n\n.markdown-body h4 {\n  font-size: 1.25em;\n}\n\n.markdown-body h4 .anchor {\n  line-height: 1.2;\n}\n\n.markdown-body h5 {\n  font-size: 1em;\n}\n\n.markdown-body h5 .anchor {\n  line-height: 1.1;\n}\n\n.markdown-body h6 {\n  font-size: 1em;\n  color: #777;\n}\n\n.markdown-body h6 .anchor {\n  line-height: 1.1;\n}\n\n.markdown-body p,\n.markdown-body blockquote,\n.markdown-body ul,\n.markdown-body ol,\n.markdown-body dl,\n.markdown-body table,\n.markdown-body pre {\n  margin-top: 0;\n  margin-bottom: 16px;\n}\n\n.markdown-body hr {\n  height: 4px;\n  padding: 0;\n  margin: 16px 0;\n  background-color: #e7e7e7;\n  border: 0 none;\n}\n\n.markdown-body ul,\n.markdown-body ol {\n  padding-left: 2em;\n}\n\n.markdown-body ul ul,\n.markdown-body ul ol,\n.markdown-body ol ol,\n.markdown-body ol ul {\n  margin-top: 0;\n  margin-bottom: 0;\n}\n\n.markdown-body li>p {\n  margin-top: 16px;\n}\n\n.markdown-body dl {\n  padding: 0;\n}\n\n.markdown-body dl dt {\n  padding: 0;\n  margin-top: 16px;\n  font-size: 1em;\n  font-style: italic;\n  font-weight: bold;\n}\n\n.markdown-body dl dd {\n  padding: 0 16px;\n  margin-bottom: 16px;\n}\n\n.markdown-body blockquote {\n  padding: 0 15px;\n  color: #777;\n  border-left: 4px solid #ddd;\n}\n\n.markdown-body blockquote>:first-child {\n  margin-top: 0;\n}\n\n.markdown-body blockquote>:last-child {\n  margin-bottom: 0;\n}\n\n.markdown-body table {\n  display: block;\n  width: 100%;\n  overflow: auto;\n  word-break: normal;\n  word-break: keep-all;\n}\n\n.markdown-body table th {\n  font-weight: bold;\n}\n\n.markdown-body table th,\n.markdown-body table td {\n  padding: 6px 13px;\n  border: 1px solid #ddd;\n}\n\n.markdown-body table tr {\n  background-color: #fff;\n  border-top: 1px solid #ccc;\n}\n\n.markdown-body table tr:nth-child(2n) {\n  background-color: #f8f8f8;\n}\n\n.markdown-body img {\n  max-width: 100%;\n  box-sizing: content-box;\n  background-color: #fff;\n}\n\n.markdown-body code {\n  padding: 0;\n  padding-top: 0.2em;\n  padding-bottom: 0.2em;\n  margin: 0;\n  font-size: 85%;\n  background-color: rgba(0,0,0,0.04);\n  border-radius: 3px;\n}\n\n.markdown-body code:before,\n.markdown-body code:after {\n  letter-spacing: -0.2em;\n  content: \"\\A0\";\n}\n\n.markdown-body pre>code {\n  padding: 0;\n  margin: 0;\n  font-size: 100%;\n  word-break: normal;\n  white-space: pre;\n  background: transparent;\n  border: 0;\n}\n\n.markdown-body .highlight {\n  margin-bottom: 16px;\n}\n\n.markdown-body .highlight pre,\n.markdown-body pre {\n  padding: 16px;\n  overflow: auto;\n  font-size: 85%;\n  line-height: 1.45;\n  background-color: #f7f7f7;\n  border-radius: 3px;\n}\n\n.markdown-body .highlight pre {\n  margin-bottom: 0;\n  word-break: normal;\n}\n\n.markdown-body pre {\n  word-wrap: normal;\n}\n\n.markdown-body pre code {\n  display: inline;\n  max-width: initial;\n  padding: 0;\n  margin: 0;\n  overflow: initial;\n  line-height: inherit;\n  word-wrap: normal;\n  background-color: transparent;\n  border: 0;\n}\n\n.markdown-body pre code:before,\n.markdown-body pre code:after {\n  content: normal;\n}\n\n.markdown-body kbd {\n  display: inline-block;\n  padding: 3px 5px;\n  font-size: 11px;\n  line-height: 10px;\n  color: #555;\n  vertical-align: middle;\n  background-color: #fcfcfc;\n  border: solid 1px #ccc;\n  border-bottom-color: #bbb;\n  border-radius: 3px;\n  box-shadow: inset 0 -1px 0 #bbb;\n}\n\n.markdown-body .pl-c {\n  color: #969896;\n}\n\n.markdown-body .pl-c1,\n.markdown-body .pl-s .pl-v {\n  color: #0086b3;\n}\n\n.markdown-body .pl-e,\n.markdown-body .pl-en {\n  color: #795da3;\n}\n\n.markdown-body .pl-s .pl-s1,\n.markdown-body .pl-smi {\n  color: #333;\n}\n\n.markdown-body .pl-ent {\n  color: #63a35c;\n}\n\n.markdown-body .pl-k {\n  color: #a71d5d;\n}\n\n.markdown-body .pl-pds,\n.markdown-body .pl-s,\n.markdown-body .pl-s .pl-pse .pl-s1,\n.markdown-body .pl-sr,\n.markdown-body .pl-sr .pl-cce,\n.markdown-body .pl-sr .pl-sra,\n.markdown-body .pl-sr .pl-sre {\n  color: #183691;\n}\n\n.markdown-body .pl-v {\n  color: #ed6a43;\n}\n\n.markdown-body .pl-id {\n  color: #b52a1d;\n}\n\n.markdown-body .pl-ii {\n  background-color: #b52a1d;\n  color: #f8f8f8;\n}\n\n.markdown-body .pl-sr .pl-cce {\n  color: #63a35c;\n  font-weight: bold;\n}\n\n.markdown-body .pl-ml {\n  color: #693a17;\n}\n\n.markdown-body .pl-mh,\n.markdown-body .pl-mh .pl-en,\n.markdown-body .pl-ms {\n  color: #1d3e81;\n  font-weight: bold;\n}\n\n.markdown-body .pl-mq {\n  color: #008080;\n}\n\n.markdown-body .pl-mi {\n  color: #333;\n  font-style: italic;\n}\n\n.markdown-body .pl-mb {\n  color: #333;\n  font-weight: bold;\n}\n\n.markdown-body .pl-md {\n  background-color: #ffecec;\n  color: #bd2c00;\n}\n\n.markdown-body .pl-mi1 {\n  background-color: #eaffea;\n  color: #55a532;\n}\n\n.markdown-body .pl-mdr {\n  color: #795da3;\n  font-weight: bold;\n}\n\n.markdown-body .pl-mo {\n  color: #1d3e81;\n}\n\n.markdown-body kbd {\n  display: inline-block;\n  padding: 3px 5px;\n  font: 11px Consolas, \"Liberation Mono\", Menlo, Courier, monospace;\n  line-height: 10px;\n  color: #555;\n  vertical-align: middle;\n  background-color: #fcfcfc;\n  border: solid 1px #ccc;\n  border-bottom-color: #bbb;\n  border-radius: 3px;\n  box-shadow: inset 0 -1px 0 #bbb;\n}\n\n.markdown-body:before {\n  display: table;\n  content: \"\";\n}\n\n.markdown-body:after {\n  display: table;\n  clear: both;\n  content: \"\";\n}\n\n.markdown-body .task-list-item {\n  list-style-type: none;\n}\n\n.markdown-body .task-list-item+.task-list-item {\n  margin-top: 3px;\n}\n\n.markdown-body .task-list-item input {\n  margin: 0 0.35em 0.25em -1.6em;\n  vertical-align: middle;\n}\n\n.markdown-body :checked+.radio-label {\n  z-index: 1;\n  position: relative;\n  border-color: #4078c0;\n}\n", ""]);
-
-	// exports
-
-
-/***/ },
-/* 146 */
-/***/ function(module, exports) {
-
-	/*
-		MIT License http://www.opensource.org/licenses/mit-license.php
-		Author Tobias Koppers @sokra
-	*/
-	// css base code, injected by the css-loader
-	module.exports = function() {
-		var list = [];
-
-		// return the list of modules as css string
-		list.toString = function toString() {
-			var result = [];
-			for(var i = 0; i < this.length; i++) {
-				var item = this[i];
-				if(item[2]) {
-					result.push("@media " + item[2] + "{" + item[1] + "}");
-				} else {
-					result.push(item[1]);
-				}
-			}
-			return result.join("");
-		};
-
-		// import a list of modules into the list
-		list.i = function(modules, mediaQuery) {
-			if(typeof modules === "string")
-				modules = [[null, modules, ""]];
-			var alreadyImportedModules = {};
-			for(var i = 0; i < this.length; i++) {
-				var id = this[i][0];
-				if(typeof id === "number")
-					alreadyImportedModules[id] = true;
-			}
-			for(i = 0; i < modules.length; i++) {
-				var item = modules[i];
-				// skip already imported module
-				// this implementation is not 100% perfect for weird media query combinations
-				//  when a module is imported multiple times with different media queries.
-				//  I hope this will never occur (Hey this way we have smaller bundles)
-				if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
-					if(mediaQuery && !item[2]) {
-						item[2] = mediaQuery;
-					} else if(mediaQuery) {
-						item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
-					}
-					list.push(item);
-				}
-			}
-		};
-		return list;
-	};
-
-
-/***/ },
-/* 147 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*
-		MIT License http://www.opensource.org/licenses/mit-license.php
-		Author Tobias Koppers @sokra
-	*/
-	var stylesInDom = {},
-		memoize = function(fn) {
-			var memo;
-			return function () {
-				if (typeof memo === "undefined") memo = fn.apply(this, arguments);
-				return memo;
-			};
-		},
-		isOldIE = memoize(function() {
-			return /msie [6-9]\b/.test(window.navigator.userAgent.toLowerCase());
-		}),
-		getHeadElement = memoize(function () {
-			return document.head || document.getElementsByTagName("head")[0];
-		}),
-		singletonElement = null,
-		singletonCounter = 0,
-		styleElementsInsertedAtTop = [];
-
-	module.exports = function(list, options) {
-		if(false) {
-			if(typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
-		}
-
-		options = options || {};
-		// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-		// tags it will allow on a page
-		if (typeof options.singleton === "undefined") options.singleton = isOldIE();
-
-		// By default, add <style> tags to the bottom of <head>.
-		if (typeof options.insertAt === "undefined") options.insertAt = "bottom";
-
-		var styles = listToStyles(list);
-		addStylesToDom(styles, options);
-
-		return function update(newList) {
-			var mayRemove = [];
-			for(var i = 0; i < styles.length; i++) {
-				var item = styles[i];
-				var domStyle = stylesInDom[item.id];
-				domStyle.refs--;
-				mayRemove.push(domStyle);
-			}
-			if(newList) {
-				var newStyles = listToStyles(newList);
-				addStylesToDom(newStyles, options);
-			}
-			for(var i = 0; i < mayRemove.length; i++) {
-				var domStyle = mayRemove[i];
-				if(domStyle.refs === 0) {
-					for(var j = 0; j < domStyle.parts.length; j++)
-						domStyle.parts[j]();
-					delete stylesInDom[domStyle.id];
-				}
-			}
-		};
-	}
-
-	function addStylesToDom(styles, options) {
-		for(var i = 0; i < styles.length; i++) {
-			var item = styles[i];
-			var domStyle = stylesInDom[item.id];
-			if(domStyle) {
-				domStyle.refs++;
-				for(var j = 0; j < domStyle.parts.length; j++) {
-					domStyle.parts[j](item.parts[j]);
-				}
-				for(; j < item.parts.length; j++) {
-					domStyle.parts.push(addStyle(item.parts[j], options));
-				}
-			} else {
-				var parts = [];
-				for(var j = 0; j < item.parts.length; j++) {
-					parts.push(addStyle(item.parts[j], options));
-				}
-				stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
-			}
-		}
-	}
-
-	function listToStyles(list) {
-		var styles = [];
-		var newStyles = {};
-		for(var i = 0; i < list.length; i++) {
-			var item = list[i];
-			var id = item[0];
-			var css = item[1];
-			var media = item[2];
-			var sourceMap = item[3];
-			var part = {css: css, media: media, sourceMap: sourceMap};
-			if(!newStyles[id])
-				styles.push(newStyles[id] = {id: id, parts: [part]});
-			else
-				newStyles[id].parts.push(part);
-		}
-		return styles;
-	}
-
-	function insertStyleElement(options, styleElement) {
-		var head = getHeadElement();
-		var lastStyleElementInsertedAtTop = styleElementsInsertedAtTop[styleElementsInsertedAtTop.length - 1];
-		if (options.insertAt === "top") {
-			if(!lastStyleElementInsertedAtTop) {
-				head.insertBefore(styleElement, head.firstChild);
-			} else if(lastStyleElementInsertedAtTop.nextSibling) {
-				head.insertBefore(styleElement, lastStyleElementInsertedAtTop.nextSibling);
-			} else {
-				head.appendChild(styleElement);
-			}
-			styleElementsInsertedAtTop.push(styleElement);
-		} else if (options.insertAt === "bottom") {
-			head.appendChild(styleElement);
-		} else {
-			throw new Error("Invalid value for parameter 'insertAt'. Must be 'top' or 'bottom'.");
-		}
-	}
-
-	function removeStyleElement(styleElement) {
-		styleElement.parentNode.removeChild(styleElement);
-		var idx = styleElementsInsertedAtTop.indexOf(styleElement);
-		if(idx >= 0) {
-			styleElementsInsertedAtTop.splice(idx, 1);
-		}
-	}
-
-	function createStyleElement(options) {
-		var styleElement = document.createElement("style");
-		styleElement.type = "text/css";
-		insertStyleElement(options, styleElement);
-		return styleElement;
-	}
-
-	function createLinkElement(options) {
-		var linkElement = document.createElement("link");
-		linkElement.rel = "stylesheet";
-		insertStyleElement(options, linkElement);
-		return linkElement;
-	}
-
-	function addStyle(obj, options) {
-		var styleElement, update, remove;
-
-		if (options.singleton) {
-			var styleIndex = singletonCounter++;
-			styleElement = singletonElement || (singletonElement = createStyleElement(options));
-			update = applyToSingletonTag.bind(null, styleElement, styleIndex, false);
-			remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true);
-		} else if(obj.sourceMap &&
-			typeof URL === "function" &&
-			typeof URL.createObjectURL === "function" &&
-			typeof URL.revokeObjectURL === "function" &&
-			typeof Blob === "function" &&
-			typeof btoa === "function") {
-			styleElement = createLinkElement(options);
-			update = updateLink.bind(null, styleElement);
-			remove = function() {
-				removeStyleElement(styleElement);
-				if(styleElement.href)
-					URL.revokeObjectURL(styleElement.href);
-			};
-		} else {
-			styleElement = createStyleElement(options);
-			update = applyToTag.bind(null, styleElement);
-			remove = function() {
-				removeStyleElement(styleElement);
-			};
-		}
-
-		update(obj);
-
-		return function updateStyle(newObj) {
-			if(newObj) {
-				if(newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap)
-					return;
-				update(obj = newObj);
-			} else {
-				remove();
-			}
-		};
-	}
-
-	var replaceText = (function () {
-		var textStore = [];
-
-		return function (index, replacement) {
-			textStore[index] = replacement;
-			return textStore.filter(Boolean).join('\n');
-		};
-	})();
-
-	function applyToSingletonTag(styleElement, index, remove, obj) {
-		var css = remove ? "" : obj.css;
-
-		if (styleElement.styleSheet) {
-			styleElement.styleSheet.cssText = replaceText(index, css);
-		} else {
-			var cssNode = document.createTextNode(css);
-			var childNodes = styleElement.childNodes;
-			if (childNodes[index]) styleElement.removeChild(childNodes[index]);
-			if (childNodes.length) {
-				styleElement.insertBefore(cssNode, childNodes[index]);
-			} else {
-				styleElement.appendChild(cssNode);
-			}
-		}
-	}
-
-	function applyToTag(styleElement, obj) {
-		var css = obj.css;
-		var media = obj.media;
-		var sourceMap = obj.sourceMap;
-
-		if(media) {
-			styleElement.setAttribute("media", media)
-		}
-
-		if(styleElement.styleSheet) {
-			styleElement.styleSheet.cssText = css;
-		} else {
-			while(styleElement.firstChild) {
-				styleElement.removeChild(styleElement.firstChild);
-			}
-			styleElement.appendChild(document.createTextNode(css));
-		}
-	}
-
-	function updateLink(linkElement, obj) {
-		var css = obj.css;
-		var media = obj.media;
-		var sourceMap = obj.sourceMap;
-
-		if(sourceMap) {
-			// http://stackoverflow.com/a/26603875
-			css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
-		}
-
-		var blob = new Blob([css], { type: "text/css" });
-
-		var oldSrc = linkElement.href;
-
-		linkElement.href = URL.createObjectURL(blob);
-
-		if(oldSrc)
-			URL.revokeObjectURL(oldSrc);
-	}
-
-
-/***/ },
-/* 148 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// style-loader: Adds some css to the DOM by adding a <style> tag
-
-	// load the styles
-	var content = __webpack_require__(149);
-	if(typeof content === 'string') content = [[module.id, content, '']];
-	// add the styles to the DOM
-	var update = __webpack_require__(147)(content, {});
-	if(content.locals) module.exports = content.locals;
-	// Hot Module Replacement
-	if(false) {
-		// When the styles change, update the <style> tags
-		if(!content.locals) {
-			module.hot.accept("!!./node_modules/css-loader/index.js!./style.css", function() {
-				var newContent = require("!!./node_modules/css-loader/index.js!./style.css");
-				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-				update(newContent);
-			});
-		}
-		// When the module is disposed, remove the <style> tags
-		module.hot.dispose(function() { update(); });
-	}
-
-/***/ },
-/* 149 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(146)();
-	// imports
-
-
-	// module
-	exports.push([module.id, "* {\n  box-sizing: border-box;\n}\n\n#editor-frame {\n  position: fixed;\n  left: 0;\n  top: 0;\n  width: 50%;\n  height: 100%;\n  background: rgb(252,252,252);\n  z-index: 2;\n}\n\n#rs {\n  position: fixed;\n  left: 50%;\n  width: 30px;\n  margin-left: -15px;\n  height: 100%;\n  top: 0;\n  background: rgba(0,255,0, 0.2);\n  opacity: 0;\n  cursor: col-resize;\n  z-index: 999;\n}\n\n#rs:hover {\n  opacity: 1;\n  transition: 0.2s ease-in-out;\n}\n\n#editor {\n  position: absolute;\n  top: 0;\n  left: 0;\n  height: 100%;\n  width: 100%;\n  padding: 50px 80px;\n\n  font-size: 15px;\n  font-family: \"Source Code Pro\", \"Monaco\", \"Consolas\", monospace;\n  color: rgb(26,26,26);\n\n  border: none;\n  background: transparent;\n}\n\n#editor:focus {\n  outline: none;\n}\n\n#preview {\n  position: fixed;\n  top: 0;\n  left: 50%;\n  height: 100%;\n  width: 50%;\n  overflow-y: scroll;\n  z-index: 1;\n  border-left: 1px solid #eee;\n}\n\n.markdown-body {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  padding: 50px;\n}\n\n", ""]);
-
-	// exports
-
 
 /***/ }
 /******/ ]);
