@@ -1,6 +1,6 @@
 # mnmlmd: The minimal acceptible markdown edior
 
-### [Try It](runningskull.github.io/mnmlmd/)
+### [Try It](http://runningskull.github.io/mnmlmd/)
 
 
 ## Features
