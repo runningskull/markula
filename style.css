@@ -1,0 +1,71 @@
+* {
+  box-sizing: border-box;
+}
+
+#editor-frame {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background: rgb(252,252,252);
+  z-index: 2;
+}
+
+#rs {
+  position: fixed;
+  left: 50%;
+  width: 30px;
+  margin-left: -15px;
+  height: 100%;
+  top: 0;
+  background: rgba(0,255,0, 0.2);
+  opacity: 0;
+  cursor: col-resize;
+  z-index: 999;
+}
+
+#rs:hover {
+  opacity: 1;
+  transition: 0.2s ease-in-out;
+}
+
+#editor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  padding: 50px 80px;
+
+  font-size: 15px;
+  font-family: "Source Code Pro", "Monaco", "Consolas", monospace;
+  color: rgb(26,26,26);
+
+  border: none;
+  background: transparent;
+}
+
+#editor:focus {
+  outline: none;
+}
+
+#preview {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: 50%;
+  overflow-y: scroll;
+  z-index: 1;
+  border-left: 1px solid #eee;
+}
+
+.markdown-body {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 50px;
+}
+
