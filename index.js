@@ -1,3 +1,5 @@
+
+
 //------------------------------------------------------------------------------
 // CSS
 
@@ -12,11 +14,14 @@ require('./style.css')
 
 // Libraries
 var throttle = require('lodash.throttle')
+  , storage = require('localforage')
   , hljs = require('highlight.js')
   , marked = require('marked')
 
 // Config
-var do_sync_scroll = true
+var cfg = {
+  sync_scroll: true
+}
 
 // Common references
 var highlight = throttle(highlight_, 2000)
@@ -32,6 +37,7 @@ var highlight = throttle(highlight_, 2000)
 
 // App
 $(function() {
+  set_storage_config()
   load_saved_data()
   listen_for_resize()
 
@@ -69,35 +75,27 @@ function highlight_() {
   })
 }
 
-function load_saved_data() {
-  $ed.val(sload('md'))
-  $ed.css(JSON.parse(sload('editor-css') || "{}"))
-  $preview.css(JSON.parse(sload('preview-css') || "{}"))
-
-  var ss = sload('sync-scroll')
-  if (ss != null) do_sync_scroll = (ss != 'false');
-
-  var rs = sload('rs-position')
-  if (rs != null) position_divider(parseInt(rs, 10));
+function set_storage_config() {
+  storage.config({
+     name: 'mnmlmd'
+    ,storeName: 'md'
+  })
 }
 
-function print_help() {
-  var _ = function(x,s){ console.log('%c'+x, s||'')}
+function load_saved_data() {
+  load_into('md', $ed, 'val')
+  load_into('editor-css', $ed, 'css', {default: {}})
+  load_into('preview-css', $preview, 'css', {default: {}})
+  load_into('sync-scroll', cfg, 'sync_scroll', {assign:true, default:true})
 
-  console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
-  _("md.sync_scroll( Bool )")
-  _("md.editor_css( {...} )")
-  _("md.preview_css( {...} )")
-  _("md.reset_config()")
-  console.groupEnd()
-  _("\nConfiguration settings will be persisted across sessions", "font-style:italic")
+  cfg_load('rs-position', position_divider)
 }
 
 function ScrollSyncer() {
   var dirty = false
 
   return function($source, $target) {
-    if (!do_sync_scroll) { return }
+    if (!cfg.sync_scroll) { return }
     if (dirty) { return (dirty = false) }
 
     var epad = ($source[0].scrollHeight - $source.innerHeight()) || 1
@@ -156,6 +154,7 @@ function resize_frames(xpx, ww) {
 }
 
 function position_divider(xpx) {
+  if (xpx == undefined) return;
   var ww = window.innerWidth
   resize_frames(xpx, ww)
   $rs.css({left: xpx})
@@ -163,29 +162,64 @@ function position_divider(xpx) {
 }
 
 
-function persist(k, v) { localStorage.setItem('mnmlmd-'+k, v) }
-function unpersist(k) { localStorage.removeItem('mnmlmd-'+k) }
-function sload(k) { return localStorage.getItem('mnmlmd-'+k) }
+function persist(k, v) { storage.setItem('mdcfg-'+k, v) }
+function unpersist(k) { storage.removeItem('mdcfg-'+k) }
+function cfg_load(k, cb) { return storage.getItem('mdcfg-'+k, with_throwing(cb)) }
+
+function with_throwing(f) { return function(e) { 
+  if (e) throw e; 
+  f.apply(this, Array.prototype.slice.call(arguments, 1))
+}}
+
+function load_into(k, obj, field, opts) {
+  /* Load stored config field 'k' into 'obj.field`.
+   * Options:
+   *  - assign: if true, do obj.field = x ; if false, obj.field(x)
+   *  - default: provide a default value if config field not found
+   */
+
+  opts || (opts = {})
+
+  cfg_load(k, function(v) {
+    if (opts.default && (v == null))
+      v = opts.default;
+
+    if (opts.assign) { obj[field] = v } 
+    else { obj[field](v) }
+  })
+}
 
 
 //------------------------------------------------------------------------------
-// Available Configuration
+// Configuration Interface
+
+function print_help() {
+  var _ = function(x,s){ console.log('%c'+x, s||'')}
+
+  console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
+  _("md.sync_scroll( Bool )")
+  _("md.editor_css( {...} )")
+  _("md.preview_css( {...} )")
+  _("md.reset_config()")
+  console.groupEnd()
+  _("\nConfiguration settings will be persisted across sessions", "font-style:italic")
+}
 
 window.md = {
   sync_scroll: function(b) { 
-    if (b===undefined) { return sload('sync-scroll') }
+    if (b===undefined) { return cfg_load('sync-scroll') }
     persist('sync-scroll', b)
-    do_sync_scroll = b
+    cfg.sync_scroll = b
   }
 
   ,editor_css: function(css) {
-    if (css===undefined) { return JSON.parse(sload('editor-css')) }
+    if (css===undefined) { return JSON.parse(cfg_load('editor-css')) }
     persist('editor-css', JSON.stringify(css))
     $ed.css(css)
   }
 
   ,preview_css: function(css) {
-    if (css===undefined) { return JSON.parse(sload('preview-css')) }
+    if (css===undefined) { return JSON.parse(cfg_load('preview-css')) }
     persist('preview-css', JSON.stringify(css))
     $preview.css(css)
   }
@@ -200,5 +234,7 @@ window.md = {
       location.reload()
     }
   }
+
+  ,storage: storage
 }
 
