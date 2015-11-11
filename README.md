@@ -1,4 +1,4 @@
-# mnmlmd: The minimal acceptible markdown editor
+# markula: Yet another markdown editor
 
 ### [Try It](http://runningskull.github.io/mnmlmd/)
 
@@ -16,8 +16,8 @@ check the dev console for configuration options!
 
 ## Dev
 
-- `git clone git@github.com:runningskull/mnmlmd.git`
-- `cd mnmlmd && npm install && npm install --global webpack-dev-server`
+- `git clone git@github.com:runningskull/markula.git`
+- `cd markula && npm install && npm install --global webpack-dev-server`
 - `./dev`
 - open `localhost:8080`
 

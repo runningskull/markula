@@ -77,7 +77,7 @@ function highlight_() {
 
 function set_storage_config() {
   storage.config({
-     name: 'mnmlmd'
+     name: 'markula'
     ,storeName: 'md'
   })
 }

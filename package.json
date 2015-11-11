@@ -1,5 +1,5 @@
 {
-  "name": "mnmlmd",
+  "name": "markula",
   "version": "0.0.1",
   "description": "Minimal acceptable markdown editor",
   "main": "index.js",
