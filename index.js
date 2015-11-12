@@ -15,6 +15,7 @@ require('jquery-tabby')
 
 // Libraries
 var throttle = require('lodash.throttle')
+  , director = require('director')
   , storage = require('./storage')
   , hljs = require('highlight.js')
   , flow = require('lodash.flow')
@@ -23,7 +24,6 @@ var throttle = require('lodash.throttle')
   , marked = require('marked')
   , key = require('keymaster')
   , help = require('./help')
-  , page = require('page')
 
 // Config
 var cfg = {
@@ -49,7 +49,7 @@ var CURRENT_FILE = null
 
 // App
 
-init_routing()
+var router = init_routing()
 
 $(function() {
   load_config()
@@ -62,9 +62,6 @@ $(function() {
   init_key_shortcuts()
   init_file_search()
   help.init($ed, $preview)
-
-  // kick things off
-  page({hashbang: true})
 })
 
 
@@ -89,17 +86,6 @@ function save_file(cb) {
   return md
 }
 
-function handle_route(render, ctx) {
-  $flist_frame.hide()
-  $flist_search.val('')
-
-  CURRENT_FILE = ctx.params.file_id
-  document.title = '✎ ' + ctx.params.file_id + '.md'
-  render && load_file()
-
-  $ed.focus()
-}
-
 
 function scroll_syncer() {
   var dirty = false
@@ -120,16 +106,23 @@ function scroll_syncer() {
 
 
 function init_routing() {
-  // triggered on initial page load
-  page(':file_id.md', handle_route.bind(null, true))
-  page(':file_id', handle_route.bind(null, true))
+  if (document.location.hash == '')
+    document.location.hash = "/";
 
-  // triggered on navigation
-  page('/:file_id.md', handle_route.bind(null, true))
-  page('/:file_id', handle_route.bind(null, true))
+  var router = director.Router({
+    '/': {
+       '': handle_route
+      ,'/(\\w+)(.md)?': {on: handle_route}
+    }
+  })
 
-  // default page
-  page('/', function(){ CURRENT_FILE = cfg.default_filename})
+  // var router_nohash = director.Router({'/$': handle_route})
+  //                             .configure({html5history: true})
+
+  router.init()
+  // router_nohash.init()
+
+  return router
 }
 
 function init_editor() {
@@ -145,7 +138,7 @@ function init_key_shortcuts() {
       var file_name = prompt('Name this file:')
       if (file_name) {
         CURRENT_FILE = file_name
-        save_file(function(){ page(file_name) })
+        save_file(function(){ router.setRoute('/'+file_name) })
         storage.files(cfg.default_filename, '')
       }
     } else {
@@ -259,10 +252,23 @@ function listen_for_search() {
 }
 
 
+function handle_route(file_id) {
+  file_id == null && (file_id = cfg.default_filename)
+
+  $flist_frame.hide()
+  $flist_search.val('')
+
+  CURRENT_FILE = file_id
+  document.title = '✎ ' + file_id + '.md'
+  load_file()
+
+  $ed.focus()
+}
+
 function populate_file_list(ks) {
   $flist.empty()
   ks.forEach(function(k) {
-    $flist.append('<li><a href="/#!'+k+'">'+k+'</li>')
+    $flist.append('<li><a href="/#/'+k+'">'+k+'</li>')
   })
 }
 
