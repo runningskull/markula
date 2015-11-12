@@ -37,6 +37,9 @@ module.exports = {
   ,files: get_set.bind(null, files)
 }
 
+module.exports.config.store = config
+module.exports.files.store = files
+
 
 
 // Helpers

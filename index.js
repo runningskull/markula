@@ -18,6 +18,7 @@ var throttle = require('lodash.throttle')
   , flow = require('lodash.flow')
   , marked = require('marked')
   , help = require('./help')
+  , page = require('page')
 
 // Config
 var cfg = {
@@ -33,17 +34,24 @@ var sync_scroll = scroll_syncer()
   , $bod = $('body')
   , $rs = $('#rs')
 
+var CURRENT_FILE = null
+
 
 // App
 
+init_routing()
+
 $(function() {
-  load_saved_data()
+  load_config()
 
   listen_for_resize()
   listen_for_scroll()
   listen_for_input()
 
   help.init($ed, $preview)
+
+  // kick things off
+  page({hashbang: true})
 })
 
 
@@ -63,8 +71,13 @@ function render(md) {
 
 function save_file() {
   var md = $ed.val()
-  storage.files('md', md)
+  storage.files(CURRENT_FILE, md)
   return md
+}
+
+function handle_route(render, ctx) {
+  CURRENT_FILE = ctx.params.file_id
+  render && load_file()
 }
 
 
@@ -86,14 +99,28 @@ function scroll_syncer() {
 }
 
 
-function load_saved_data() {
-  storage.files('md', flow(into($ed, 'val'), render))
+function init_routing() {
+  // triggered on initial page load
+  page(':file_id', handle_route.bind(null, true))
 
+  // triggered on navigation
+  page('/:file_id', handle_route.bind(null, true))
+
+  // default page
+  page('/', function(){ CURRENT_FILE = '*scratch*' })
+}
+}
+
+function load_config() {
   storage.config('editor-css', into($ed, 'css', {default: {}}))
   storage.config('preview-css', into($preview, 'css', {default: {}}))
   storage.config('sync-scroll', into(cfg, 'sync_scroll', {assign:true, default:true}))
 
   storage.config('rs-position', position_divider)
+}
+
+function load_file() {
+  storage.files(CURRENT_FILE, flow(into($ed, 'val'), render))
 }
 
 function listen_for_resize() {
