@@ -85,10 +85,12 @@ function print_help() {
   _("")
 
   console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
-  _("md.sync_scroll( Bool )")
-  _("md.editor_css( {...} )")
-  _("md.preview_css( {...} )")
-  _("md.reset_config()")
+  _('md.rm( "filename" )              ||  md.rm(["f1", "f2", ...])')
+  _('md.css.editor( "prop", "val" )   ||  md.css.editor( {prop:val, ...} )')
+  _('md.css.preview( "prop", "val" )  ||  md.css.preview({prop:val, ...})')
+  _('md.css( $elem, "storage-key", {prop:val, ...} )')
+  _('md.sync_scroll( sync? )')
+  _('md.reset_config()')
   console.groupEnd()
   _("")
   
