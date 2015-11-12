@@ -3,6 +3,11 @@
   <head><title>MARKDOWN</title></head>
   <body ondragover="event.preventDefault()">
 
+    <div id="file-list-frame" style="display:none">
+      <input id="file-list-search">
+      <ul id="file-list"></ul>
+    </div>
+
     <div id="editor-frame"><textarea id="editor" wrap="on" autofocus></textarea><b id="rs" draggable=true></b></div>
     <div id="preview"><div class="markdown-body"></div></div>
 

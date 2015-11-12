@@ -62,23 +62,31 @@
 	  , storage = __webpack_require__(12)
 	  , hljs = __webpack_require__(16)
 	  , flow = __webpack_require__(155)
-	  , marked = __webpack_require__(156)
-	  , help = __webpack_require__(157)
-	  , page = __webpack_require__(158)
+	  , search = __webpack_require__(156)
+	  , pad = __webpack_require__(164)
+	  , marked = __webpack_require__(168)
+	  , key = __webpack_require__(169)
+	  , help = __webpack_require__(170)
+	  , page = __webpack_require__(171)
 
 	// Config
 	var cfg = {
-	  sync_scroll: true
+	   sync_scroll: true
+	  ,default_filename: '*scratch*'
 	}
 
 	// Common references
 	var sync_scroll = scroll_syncer()
-	  , $preview = $('#preview')
 	  , $eframe = $('#editor-frame')
 	  , $md = $('.markdown-body')
+	  , $preview = $('#preview')
+	  , $flist = $('#file-list')
 	  , $ed = $('#editor')
 	  , $bod = $('body')
 	  , $rs = $('#rs')
+
+	var $flist_frame = $flist.parent()
+	  , $flist_search = $('#file-list-search')
 
 	var CURRENT_FILE = null
 
@@ -94,6 +102,8 @@
 	  listen_for_scroll()
 	  listen_for_input()
 
+	  init_key_shortcuts()
+	  init_file_search()
 	  help.init($ed, $preview)
 
 	  // kick things off
@@ -115,15 +125,22 @@
 	  highlight()
 	}
 
-	function save_file() {
+	function save_file(cb) {
 	  var md = $ed.val()
-	  storage.files(CURRENT_FILE, md)
+	  if ('function' != typeof cb) cb = undefined;
+	  storage.files(CURRENT_FILE, md, cb)
 	  return md
 	}
 
 	function handle_route(render, ctx) {
+	  $flist_frame.hide()
+	  $flist_search.val('')
+
 	  CURRENT_FILE = ctx.params.file_id
+	  document.title = '✎ ' + ctx.params.file_id + '.md'
 	  render && load_file()
+
+	  $ed.focus()
 	}
 
 
@@ -147,10 +164,70 @@
 
 	function init_routing() {
 	  // triggered on initial page load
+	  page(':file_id.md', handle_route.bind(null, true))
 	  page(':file_id', handle_route.bind(null, true))
 
 	  // triggered on navigation
+	  page('/:file_id.md', handle_route.bind(null, true))
 	  page('/:file_id', handle_route.bind(null, true))
+
+	  // default page
+	  page('/', function(){ CURRENT_FILE = cfg.default_filename})
+	}
+
+	function init_key_shortcuts() {
+	  key.filter = function(){ return true }
+
+	  key('command+s, ctrl+s', function() {
+	    if (!CURRENT_FILE || (CURRENT_FILE == cfg.default_filename)) {
+	      // save as a named file
+	      var file_name = prompt('Name this file:')
+	      if (file_name) {
+	        CURRENT_FILE = file_name
+	        save_file(function(){ page(file_name) })
+	        storage.files(cfg.default_filename, '')
+	      }
+	    } else {
+	      // placebo
+	      var delay = 210
+	        , old = document.title
+
+	      document.title = '✔ Saved'
+	      setTimeout(function(){ document.title = '✔ ' },       delay)
+	      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 2)
+	      setTimeout(function(){ document.title = '✔ ' },       delay * 3)
+	      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 4)
+	      setTimeout(function(){ document.title = old},         delay * 9)
+	    }
+
+	    return false
+	  })
+
+	  key('ctrl+p', function() {
+	    storage.files.store.keys(function(e, ks) {
+	      if (e) throw e;
+
+	      key.setScope('file-list')
+	      $flist_frame.show()
+
+	      populate_file_list(ks)
+
+	      $flist_search.focus()
+	    })
+
+	    return false
+	  })
+
+	  key('escape', 'file-list', function() {
+	    $flist_frame.hide()
+	    key.setScope(null)
+	    return false
+	  })
+	}
+
+	function init_file_search() {
+	  search.init()
+	  listen_for_search()
 	}
 
 	function load_config() {
@@ -213,6 +290,20 @@
 	  $ed.on('input', throttle(flow(_render, save_file), 20))
 	}
 
+	function listen_for_search() {
+	  $flist_search.on('input', function() {
+	    var q = $flist_search.val()
+	    populate_file_list(search.search(q))
+	  })
+	}
+
+
+	function populate_file_list(ks) {
+	  $flist.empty()
+	  ks.forEach(function(k) {
+	    $flist.append('<li><a href="/#!'+k+'">'+k+'</li>')
+	  })
+	}
 
 	function position_divider(xpx) {
 	  if (xpx == undefined) return;
@@ -231,7 +322,6 @@
 	  $eframe.css({width: x+'%'})
 	  $preview.css({left:x+'%', width:xx+'%'})
 	}
-
 
 	function into(obj, k, opts) {
 	  /* Returns a function that puts a 'val' into field 'k' of 'obj', returning 'val'
@@ -678,7 +768,7 @@
 
 
 	// module
-	exports.push([module.id, "* {\n  box-sizing: border-box;\n}\n\n#editor-frame {\n  position: fixed;\n  left: 0;\n  top: 0;\n  width: 50%;\n  height: 100%;\n  background: rgb(252,252,252);\n  z-index: 2;\n}\n\n#rs {\n  position: fixed;\n  left: 50%;\n  width: 30px;\n  margin-left: -15px;\n  height: 100%;\n  top: 0;\n  background: rgba(0,255,0, 0.2);\n  opacity: 0;\n  cursor: col-resize;\n  z-index: 999;\n}\n\n#rs:hover {\n  opacity: 1;\n  transition: 0.2s ease-in-out;\n}\n\n#editor {\n  position: absolute;\n  top: 0;\n  left: 0;\n  height: 100%;\n  width: 100%;\n  padding: 50px 100px;\n\n  font-size: 15px;\n  font-family: \"Source Code Pro\", \"Monaco\", \"Consolas\", monospace;\n  color: rgb(26,26,26);\n\n  border: none;\n  background: transparent;\n\n  -webkit-font-smoothing: subpixel-antialiased;\n}\n\n#editor:focus {\n  outline: none;\n}\n\n#preview {\n  position: fixed;\n  top: 0;\n  left: 50%;\n  height: 100%;\n  width: 50%;\n  overflow-y: scroll;\n  z-index: 1;\n  border-left: 1px solid #eee;\n}\n\n.markdown-body {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  padding: 50px;\n  -webkit-font-smoothing: subpixel-antialiased;\n}\n\n", ""]);
+	exports.push([module.id, "* {\n  box-sizing: border-box;\n}\n\n#editor-frame {\n  position: fixed;\n  left: 0;\n  top: 0;\n  width: 50%;\n  height: 100%;\n  background: rgb(252,252,252);\n  z-index: 2;\n}\n\n#rs {\n  position: fixed;\n  left: 50%;\n  width: 30px;\n  margin-left: -15px;\n  height: 100%;\n  top: 0;\n  background: rgba(0,255,0, 0.2);\n  opacity: 0;\n  cursor: col-resize;\n  z-index: 999;\n}\n\n#rs:hover {\n  opacity: 1;\n  transition: 0.2s ease-in-out;\n}\n\n#editor {\n  position: absolute;\n  top: 0;\n  left: 0;\n  height: 100%;\n  width: 100%;\n  padding: 50px 100px;\n\n  font-size: 15px;\n  font-family: \"Source Code Pro\", \"Monaco\", \"Consolas\", monospace;\n  color: rgb(26,26,26);\n\n  border: none;\n  background: transparent;\n\n  -webkit-font-smoothing: subpixel-antialiased;\n}\n\n#editor:focus {\n  outline: none;\n}\n\n#preview {\n  position: fixed;\n  top: 0;\n  left: 50%;\n  height: 100%;\n  width: 50%;\n  overflow-y: scroll;\n  z-index: 1;\n  border-left: 1px solid #eee;\n}\n\n.markdown-body {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  padding: 50px;\n  -webkit-font-smoothing: subpixel-antialiased;\n}\n\n#file-list-frame {\n  position: fixed;\n  z-index: 999;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background: #f2f2f2;\n  color: #444;\n  font-size: 18px;\n  text-align: center;\n  margin: 0;\n  padding: 0;\n  font-family: \"Source Code Pro\", \"Monaco\", \"Consolas\", monospace;\n}\n\n#file-list {\n  list-style-type: none;\n  padding: 0;\n}\n\n#file-list > li > a {\n  line-height: 2em;\n  display: block;\n}\n\n#file-list > li > a:hover,\n#file-list > li > a:focus {\n  background: #ddd;\n}\n\n#file-list-search {\n  padding: 10px;\n  font-size: 18px;\n  margin-top: 20px;\n  color: #676767;\n  background: rgba(255,255,255, 0.5);\n  display: inline-block;\n  width: 300px;\n}\n\n", ""]);
 
 	// exports
 
@@ -4124,19 +4214,20 @@
 		"main": "index.js",
 		"dependencies": {
 			"css-loader": "0.22.0",
+			"fuzzy": "0.1.1",
 			"github-markdown-css": "2.1.0",
 			"highlight.js": "8.9.1",
 			"localforage": "1.3.0",
-			"lodash.flow": "^3.2.1",
+			"lodash.flow": "3.2.1",
 			"lodash.throttle": "3.0.4",
 			"marked": "0.3.5",
-			"page": "^1.6.4",
+			"page": "1.6.4",
 			"style-loader": "0.13.0",
 			"webpack": "1.12.3"
 		},
 		"devDependencies": {
 			"css-loader": "0.22.0",
-			"json-loader": "^0.5.3",
+			"json-loader": "0.5.3",
 			"style-loader": "0.13.0",
 			"webpack": "1.12.3"
 		},
@@ -18491,6 +18582,1052 @@
 /* 156 */
 /***/ function(module, exports, __webpack_require__) {
 
+	var fuzzy = __webpack_require__(157)
+	  , storage = __webpack_require__(12)
+	  , at = __webpack_require__(158)
+
+	var f, filenames
+
+	function init() {
+	  reload()
+	}
+
+	function reload() {
+	  storage.files.store.keys(function(e, ks) {
+	    if (e) throw e;
+	    filenames = ks
+	  })
+	}
+
+	function search(pattern) {
+	  if (pattern == "")
+	    return filenames;
+
+	  var matches = fuzzy.filter(pattern, filenames).map(function(res) {
+	    return res.original
+	  })
+
+	  return matches
+	}
+
+
+	module.exports = {
+	  init: init,
+	  reload: reload,
+	  search: search
+	}
+
+
+
+/***/ },
+/* 157 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*
+	 * Fuzzy
+	 * https://github.com/myork/fuzzy
+	 *
+	 * Copyright (c) 2012 Matt York
+	 * Licensed under the MIT license.
+	 */
+
+	(function() {
+
+	var root = this;
+
+	var fuzzy = {};
+
+	// Use in node or in browser
+	if (true) {
+	  module.exports = fuzzy;
+	} else {
+	  root.fuzzy = fuzzy;
+	}
+
+	// Return all elements of `array` that have a fuzzy
+	// match against `pattern`.
+	fuzzy.simpleFilter = function(pattern, array) {
+	  return array.filter(function(string) {
+	    return fuzzy.test(pattern, string);
+	  });
+	};
+
+	// Does `pattern` fuzzy match `string`?
+	fuzzy.test = function(pattern, string) {
+	  return fuzzy.match(pattern, string) !== null;
+	};
+
+	// If `pattern` matches `string`, wrap each matching character
+	// in `opts.pre` and `opts.post`. If no match, return null
+	fuzzy.match = function(pattern, string, opts) {
+	  opts = opts || {};
+	  var patternIdx = 0
+	    , result = []
+	    , len = string.length
+	    , totalScore = 0
+	    , currScore = 0
+	    // prefix
+	    , pre = opts.pre || ''
+	    // suffix
+	    , post = opts.post || ''
+	    // String to compare against. This might be a lowercase version of the
+	    // raw string
+	    , compareString =  opts.caseSensitive && string || string.toLowerCase()
+	    , ch, compareChar;
+
+	  pattern = opts.caseSensitive && pattern || pattern.toLowerCase();
+
+	  // For each character in the string, either add it to the result
+	  // or wrap in template if it's the next string in the pattern
+	  for(var idx = 0; idx < len; idx++) {
+	    ch = string[idx];
+	    if(compareString[idx] === pattern[patternIdx]) {
+	      ch = pre + ch + post;
+	      patternIdx += 1;
+
+	      // consecutive characters should increase the score more than linearly
+	      currScore += 1 + currScore;
+	    } else {
+	      currScore = 0;
+	    }
+	    totalScore += currScore;
+	    result[result.length] = ch;
+	  }
+
+	  // return rendered string if we have a match for every char
+	  if(patternIdx === pattern.length) {
+	    return {rendered: result.join(''), score: totalScore};
+	  }
+
+	  return null;
+	};
+
+	// The normal entry point. Filters `arr` for matches against `pattern`.
+	// It returns an array with matching values of the type:
+	//
+	//     [{
+	//         string:   '<b>lah' // The rendered string
+	//       , index:    2        // The index of the element in `arr`
+	//       , original: 'blah'   // The original element in `arr`
+	//     }]
+	//
+	// `opts` is an optional argument bag. Details:
+	//
+	//    opts = {
+	//        // string to put before a matching character
+	//        pre:     '<b>'
+	//
+	//        // string to put after matching character
+	//      , post:    '</b>'
+	//
+	//        // Optional function. Input is an entry in the given arr`,
+	//        // output should be the string to test `pattern` against.
+	//        // In this example, if `arr = [{crying: 'koala'}]` we would return
+	//        // 'koala'.
+	//      , extract: function(arg) { return arg.crying; }
+	//    }
+	fuzzy.filter = function(pattern, arr, opts) {
+	  opts = opts || {};
+	  return arr
+	    .reduce(function(prev, element, idx, arr) {
+	      var str = element;
+	      if(opts.extract) {
+	        str = opts.extract(element);
+	      }
+	      var rendered = fuzzy.match(pattern, str, opts);
+	      if(rendered != null) {
+	        prev[prev.length] = {
+	            string: rendered.rendered
+	          , score: rendered.score
+	          , index: idx
+	          , original: element
+	        };
+	      }
+	      return prev;
+	    }, [])
+
+	    // Sort by score. Browsers are inconsistent wrt stable/unstable
+	    // sorting, so force stable by using the index in the case of tie.
+	    // See http://ofb.net/~sethml/is-sort-stable.html
+	    .sort(function(a,b) {
+	      var compare = b.score - a.score;
+	      if(compare) return compare;
+	      return a.index - b.index;
+	    });
+	};
+
+
+	}());
+
+
+
+/***/ },
+/* 158 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.2.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseAt = __webpack_require__(159),
+	    baseFlatten = __webpack_require__(160),
+	    restParam = __webpack_require__(163);
+
+	/**
+	 * Creates an array of elements corresponding to the given keys, or indexes,
+	 * of `collection`. Keys may be specified as individual arguments or as arrays
+	 * of keys.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Collection
+	 * @param {Array|Object|string} collection The collection to iterate over.
+	 * @param {...(number|number[]|string|string[])} [props] The property names
+	 *  or indexes of elements to pick, specified individually or in arrays.
+	 * @returns {Array} Returns the new array of picked elements.
+	 * @example
+	 *
+	 * _.at(['a', 'b', 'c'], [0, 2]);
+	 * // => ['a', 'c']
+	 *
+	 * _.at(['barney', 'fred', 'pebbles'], 0, 2);
+	 * // => ['barney', 'pebbles']
+	 */
+	var at = restParam(function(collection, props) {
+	  return baseAt(collection, baseFlatten(props));
+	});
+
+	module.exports = at;
+
+
+/***/ },
+/* 159 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/** Used to detect unsigned integer values. */
+	var reIsUint = /^\d+$/;
+
+	/**
+	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+
+	/**
+	 * The base implementation of `_.at` without support for string collections
+	 * and individual key arguments.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {number[]|string[]} props The property names or indexes of elements to pick.
+	 * @returns {Array} Returns the new array of picked elements.
+	 */
+	function baseAt(collection, props) {
+	  var index = -1,
+	      isNil = collection == null,
+	      isArr = !isNil && isArrayLike(collection),
+	      length = isArr ? collection.length : 0,
+	      propsLength = props.length,
+	      result = Array(propsLength);
+
+	  while(++index < propsLength) {
+	    var key = props[index];
+	    if (isArr) {
+	      result[index] = isIndex(key, length) ? collection[key] : undefined;
+	    } else {
+	      result[index] = isNil ? undefined : collection[key];
+	    }
+	  }
+	  return result;
+	}
+
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+
+	/**
+	 * Checks if `value` is array-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+
+	module.exports = baseAt;
+
+
+/***/ },
+/* 160 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.1.4 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var isArguments = __webpack_require__(161),
+	    isArray = __webpack_require__(162);
+
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+
+	/**
+	 * Appends the elements of `values` to `array`.
+	 *
+	 * @private
+	 * @param {Array} array The array to modify.
+	 * @param {Array} values The values to append.
+	 * @returns {Array} Returns `array`.
+	 */
+	function arrayPush(array, values) {
+	  var index = -1,
+	      length = values.length,
+	      offset = array.length;
+
+	  while (++index < length) {
+	    array[offset + index] = values[index];
+	  }
+	  return array;
+	}
+
+	/**
+	 * The base implementation of `_.flatten` with added support for restricting
+	 * flattening and specifying the start index.
+	 *
+	 * @private
+	 * @param {Array} array The array to flatten.
+	 * @param {boolean} [isDeep] Specify a deep flatten.
+	 * @param {boolean} [isStrict] Restrict flattening to arrays-like objects.
+	 * @param {Array} [result=[]] The initial result value.
+	 * @returns {Array} Returns the new flattened array.
+	 */
+	function baseFlatten(array, isDeep, isStrict, result) {
+	  result || (result = []);
+
+	  var index = -1,
+	      length = array.length;
+
+	  while (++index < length) {
+	    var value = array[index];
+	    if (isObjectLike(value) && isArrayLike(value) &&
+	        (isStrict || isArray(value) || isArguments(value))) {
+	      if (isDeep) {
+	        // Recursively flatten arrays (susceptible to call stack limits).
+	        baseFlatten(value, isDeep, isStrict, result);
+	      } else {
+	        arrayPush(result, value);
+	      }
+	    } else if (!isStrict) {
+	      result[result.length] = value;
+	    }
+	  }
+	  return result;
+	}
+
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+
+	/**
+	 * Checks if `value` is array-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+
+	module.exports = baseFlatten;
+
+
+/***/ },
+/* 161 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+
+	/** Native method references. */
+	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+
+	/**
+	 * Checks if `value` is array-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+
+	/**
+	 * Checks if `value` is classified as an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArguments(function() { return arguments; }());
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  return isObjectLike(value) && isArrayLike(value) &&
+	    hasOwnProperty.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee');
+	}
+
+	module.exports = isArguments;
+
+
+/***/ },
+/* 162 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/** `Object#toString` result references. */
+	var arrayTag = '[object Array]',
+	    funcTag = '[object Function]';
+
+	/** Used to detect host constructors (Safari > 5). */
+	var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+
+	/** Used to detect if a method is native. */
+	var reIsNative = RegExp('^' +
+	  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+	  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeIsArray = getNative(Array, 'isArray');
+
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+
+	/**
+	 * Gets the native function at `key` of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @param {string} key The key of the method to get.
+	 * @returns {*} Returns the function if it's native, else `undefined`.
+	 */
+	function getNative(object, key) {
+	  var value = object == null ? undefined : object[key];
+	  return isNative(value) ? value : undefined;
+	}
+
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+
+	/**
+	 * Checks if `value` is classified as an `Array` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArray([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isArray(function() { return arguments; }());
+	 * // => false
+	 */
+	var isArray = nativeIsArray || function(value) {
+	  return isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag;
+	};
+
+	/**
+	 * Checks if `value` is classified as a `Function` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isFunction(_);
+	 * // => true
+	 *
+	 * _.isFunction(/abc/);
+	 * // => false
+	 */
+	function isFunction(value) {
+	  // The use of `Object#toString` avoids issues with the `typeof` operator
+	  // in older versions of Chrome and Safari which return 'function' for regexes
+	  // and Safari 8 equivalents which return 'object' for typed array constructors.
+	  return isObject(value) && objToString.call(value) == funcTag;
+	}
+
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (isFunction(value)) {
+	    return reIsNative.test(fnToString.call(value));
+	  }
+	  return isObjectLike(value) && reIsHostCtor.test(value);
+	}
+
+	module.exports = isArray;
+
+
+/***/ },
+/* 163 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/** Used as the `TypeError` message for "Functions" methods. */
+	var FUNC_ERROR_TEXT = 'Expected a function';
+
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max;
+
+	/**
+	 * Creates a function that invokes `func` with the `this` binding of the
+	 * created function and arguments from `start` and beyond provided as an array.
+	 *
+	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Function
+	 * @param {Function} func The function to apply a rest parameter to.
+	 * @param {number} [start=func.length-1] The start position of the rest parameter.
+	 * @returns {Function} Returns the new function.
+	 * @example
+	 *
+	 * var say = _.restParam(function(what, names) {
+	 *   return what + ' ' + _.initial(names).join(', ') +
+	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
+	 * });
+	 *
+	 * say('hello', 'fred', 'barney', 'pebbles');
+	 * // => 'hello fred, barney, & pebbles'
+	 */
+	function restParam(func, start) {
+	  if (typeof func != 'function') {
+	    throw new TypeError(FUNC_ERROR_TEXT);
+	  }
+	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
+	  return function() {
+	    var args = arguments,
+	        index = -1,
+	        length = nativeMax(args.length - start, 0),
+	        rest = Array(length);
+
+	    while (++index < length) {
+	      rest[index] = args[start + index];
+	    }
+	    switch (start) {
+	      case 0: return func.call(this, rest);
+	      case 1: return func.call(this, args[0], rest);
+	      case 2: return func.call(this, args[0], args[1], rest);
+	    }
+	    var otherArgs = Array(start + 1);
+	    index = -1;
+	    while (++index < start) {
+	      otherArgs[index] = args[index];
+	    }
+	    otherArgs[start] = rest;
+	    return func.apply(this, otherArgs);
+	  };
+	}
+
+	module.exports = restParam;
+
+
+/***/ },
+/* 164 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/**
+	 * lodash 3.1.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseToString = __webpack_require__(165),
+	    createPadding = __webpack_require__(166);
+
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeCeil = Math.ceil,
+	    nativeFloor = Math.floor,
+	    nativeIsFinite = global.isFinite;
+
+	/**
+	 * Pads `string` on the left and right sides if it's shorter than `length`.
+	 * Padding characters are truncated if they can't be evenly divided by `length`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to pad.
+	 * @param {number} [length=0] The padding length.
+	 * @param {string} [chars=' '] The string used as padding.
+	 * @returns {string} Returns the padded string.
+	 * @example
+	 *
+	 * _.pad('abc', 8);
+	 * // => '  abc   '
+	 *
+	 * _.pad('abc', 8, '_-');
+	 * // => '_-abc_-_'
+	 *
+	 * _.pad('abc', 3);
+	 * // => 'abc'
+	 */
+	function pad(string, length, chars) {
+	  string = baseToString(string);
+	  length = +length;
+
+	  var strLength = string.length;
+	  if (strLength >= length || !nativeIsFinite(length)) {
+	    return string;
+	  }
+	  var mid = (length - strLength) / 2,
+	      leftLength = nativeFloor(mid),
+	      rightLength = nativeCeil(mid);
+
+	  chars = createPadding('', rightLength, chars);
+	  return chars.slice(0, leftLength) + string + chars;
+	}
+
+	module.exports = pad;
+
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 165 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/**
+	 * Converts `value` to a string if it's not one. An empty string is returned
+	 * for `null` or `undefined` values.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {string} Returns the string.
+	 */
+	function baseToString(value) {
+	  return value == null ? '' : (value + '');
+	}
+
+	module.exports = baseToString;
+
+
+/***/ },
+/* 166 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/**
+	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var repeat = __webpack_require__(167);
+
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeCeil = Math.ceil,
+	    nativeIsFinite = global.isFinite;
+
+	/**
+	 * Creates the padding required for `string` based on the given `length`.
+	 * The `chars` string is truncated if the number of characters exceeds `length`.
+	 *
+	 * @private
+	 * @param {string} string The string to create padding for.
+	 * @param {number} [length=0] The padding length.
+	 * @param {string} [chars=' '] The string used as padding.
+	 * @returns {string} Returns the pad for `string`.
+	 */
+	function createPadding(string, length, chars) {
+	  var strLength = string.length;
+	  length = +length;
+
+	  if (strLength >= length || !nativeIsFinite(length)) {
+	    return '';
+	  }
+	  var padLength = length - strLength;
+	  chars = chars == null ? ' ' : (chars + '');
+	  return repeat(chars, nativeCeil(padLength / chars.length)).slice(0, padLength);
+	}
+
+	module.exports = createPadding;
+
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 167 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseToString = __webpack_require__(165);
+
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeFloor = Math.floor,
+	    nativeIsFinite = global.isFinite;
+
+	/**
+	 * Repeats the given string `n` times.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to repeat.
+	 * @param {number} [n=0] The number of times to repeat the string.
+	 * @returns {string} Returns the repeated string.
+	 * @example
+	 *
+	 * _.repeat('*', 3);
+	 * // => '***'
+	 *
+	 * _.repeat('abc', 2);
+	 * // => 'abcabc'
+	 *
+	 * _.repeat('abc', 0);
+	 * // => ''
+	 */
+	function repeat(string, n) {
+	  var result = '';
+	  string = baseToString(string);
+	  n = +n;
+	  if (n < 1 || !string || !nativeIsFinite(n)) {
+	    return result;
+	  }
+	  // Leverage the exponentiation by squaring algorithm for a faster repeat.
+	  // See https://en.wikipedia.org/wiki/Exponentiation_by_squaring for more details.
+	  do {
+	    if (n % 2) {
+	      result += string;
+	    }
+	    n = nativeFloor(n / 2);
+	    string += string;
+	  } while (n);
+
+	  return result;
+	}
+
+	module.exports = repeat;
+
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 168 */
+/***/ function(module, exports, __webpack_require__) {
+
 	/* WEBPACK VAR INJECTION */(function(global) {/**
 	 * marked - a markdown parser
 	 * Copyright (c) 2011-2014, Christopher Jeffrey. (MIT Licensed)
@@ -19780,7 +20917,309 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 157 */
+/* 169 */
+/***/ function(module, exports, __webpack_require__) {
+
+	//     keymaster.js
+	//     (c) 2011-2013 Thomas Fuchs
+	//     keymaster.js may be freely distributed under the MIT license.
+
+	;(function(global){
+	  var k,
+	    _handlers = {},
+	    _mods = { 16: false, 18: false, 17: false, 91: false },
+	    _scope = 'all',
+	    // modifier keys
+	    _MODIFIERS = {
+	      '⇧': 16, shift: 16,
+	      '⌥': 18, alt: 18, option: 18,
+	      '⌃': 17, ctrl: 17, control: 17,
+	      '⌘': 91, command: 91
+	    },
+	    // special keys
+	    _MAP = {
+	      backspace: 8, tab: 9, clear: 12,
+	      enter: 13, 'return': 13,
+	      esc: 27, escape: 27, space: 32,
+	      left: 37, up: 38,
+	      right: 39, down: 40,
+	      del: 46, 'delete': 46,
+	      home: 36, end: 35,
+	      pageup: 33, pagedown: 34,
+	      ',': 188, '.': 190, '/': 191,
+	      '`': 192, '-': 189, '=': 187,
+	      ';': 186, '\'': 222,
+	      '[': 219, ']': 221, '\\': 220
+	    },
+	    code = function(x){
+	      return _MAP[x] || x.toUpperCase().charCodeAt(0);
+	    },
+	    _downKeys = [];
+
+	  for(k=1;k<20;k++) _MAP['f'+k] = 111+k;
+
+	  // IE doesn't support Array#indexOf, so have a simple replacement
+	  function index(array, item){
+	    var i = array.length;
+	    while(i--) if(array[i]===item) return i;
+	    return -1;
+	  }
+
+	  // for comparing mods before unassignment
+	  function compareArray(a1, a2) {
+	    if (a1.length != a2.length) return false;
+	    for (var i = 0; i < a1.length; i++) {
+	        if (a1[i] !== a2[i]) return false;
+	    }
+	    return true;
+	  }
+
+	  var modifierMap = {
+	      16:'shiftKey',
+	      18:'altKey',
+	      17:'ctrlKey',
+	      91:'metaKey'
+	  };
+	  function updateModifierKey(event) {
+	      for(k in _mods) _mods[k] = event[modifierMap[k]];
+	  };
+
+	  // handle keydown event
+	  function dispatch(event) {
+	    var key, handler, k, i, modifiersMatch, scope;
+	    key = event.keyCode;
+
+	    if (index(_downKeys, key) == -1) {
+	        _downKeys.push(key);
+	    }
+
+	    // if a modifier key, set the key.<modifierkeyname> property to true and return
+	    if(key == 93 || key == 224) key = 91; // right command on webkit, command on Gecko
+	    if(key in _mods) {
+	      _mods[key] = true;
+	      // 'assignKey' from inside this closure is exported to window.key
+	      for(k in _MODIFIERS) if(_MODIFIERS[k] == key) assignKey[k] = true;
+	      return;
+	    }
+	    updateModifierKey(event);
+
+	    // see if we need to ignore the keypress (filter() can can be overridden)
+	    // by default ignore key presses if a select, textarea, or input is focused
+	    if(!assignKey.filter.call(this, event)) return;
+
+	    // abort if no potentially matching shortcuts found
+	    if (!(key in _handlers)) return;
+
+	    scope = getScope();
+
+	    // for each potential shortcut
+	    for (i = 0; i < _handlers[key].length; i++) {
+	      handler = _handlers[key][i];
+
+	      // see if it's in the current scope
+	      if(handler.scope == scope || handler.scope == 'all'){
+	        // check if modifiers match if any
+	        modifiersMatch = handler.mods.length > 0;
+	        for(k in _mods)
+	          if((!_mods[k] && index(handler.mods, +k) > -1) ||
+	            (_mods[k] && index(handler.mods, +k) == -1)) modifiersMatch = false;
+	        // call the handler and stop the event if neccessary
+	        if((handler.mods.length == 0 && !_mods[16] && !_mods[18] && !_mods[17] && !_mods[91]) || modifiersMatch){
+	          if(handler.method(event, handler)===false){
+	            if(event.preventDefault) event.preventDefault();
+	              else event.returnValue = false;
+	            if(event.stopPropagation) event.stopPropagation();
+	            if(event.cancelBubble) event.cancelBubble = true;
+	          }
+	        }
+	      }
+	    }
+	  };
+
+	  // unset modifier keys on keyup
+	  function clearModifier(event){
+	    var key = event.keyCode, k,
+	        i = index(_downKeys, key);
+
+	    // remove key from _downKeys
+	    if (i >= 0) {
+	        _downKeys.splice(i, 1);
+	    }
+
+	    if(key == 93 || key == 224) key = 91;
+	    if(key in _mods) {
+	      _mods[key] = false;
+	      for(k in _MODIFIERS) if(_MODIFIERS[k] == key) assignKey[k] = false;
+	    }
+	  };
+
+	  function resetModifiers() {
+	    for(k in _mods) _mods[k] = false;
+	    for(k in _MODIFIERS) assignKey[k] = false;
+	  };
+
+	  // parse and assign shortcut
+	  function assignKey(key, scope, method){
+	    var keys, mods;
+	    keys = getKeys(key);
+	    if (method === undefined) {
+	      method = scope;
+	      scope = 'all';
+	    }
+
+	    // for each shortcut
+	    for (var i = 0; i < keys.length; i++) {
+	      // set modifier keys if any
+	      mods = [];
+	      key = keys[i].split('+');
+	      if (key.length > 1){
+	        mods = getMods(key);
+	        key = [key[key.length-1]];
+	      }
+	      // convert to keycode and...
+	      key = key[0]
+	      key = code(key);
+	      // ...store handler
+	      if (!(key in _handlers)) _handlers[key] = [];
+	      _handlers[key].push({ shortcut: keys[i], scope: scope, method: method, key: keys[i], mods: mods });
+	    }
+	  };
+
+	  // unbind all handlers for given key in current scope
+	  function unbindKey(key, scope) {
+	    var multipleKeys, keys,
+	      mods = [],
+	      i, j, obj;
+
+	    multipleKeys = getKeys(key);
+
+	    for (j = 0; j < multipleKeys.length; j++) {
+	      keys = multipleKeys[j].split('+');
+
+	      if (keys.length > 1) {
+	        mods = getMods(keys);
+	        key = keys[keys.length - 1];
+	      }
+
+	      key = code(key);
+
+	      if (scope === undefined) {
+	        scope = getScope();
+	      }
+	      if (!_handlers[key]) {
+	        return;
+	      }
+	      for (i = 0; i < _handlers[key].length; i++) {
+	        obj = _handlers[key][i];
+	        // only clear handlers if correct scope and mods match
+	        if (obj.scope === scope && compareArray(obj.mods, mods)) {
+	          _handlers[key][i] = {};
+	        }
+	      }
+	    }
+	  };
+
+	  // Returns true if the key with code 'keyCode' is currently down
+	  // Converts strings into key codes.
+	  function isPressed(keyCode) {
+	      if (typeof(keyCode)=='string') {
+	        keyCode = code(keyCode);
+	      }
+	      return index(_downKeys, keyCode) != -1;
+	  }
+
+	  function getPressedKeyCodes() {
+	      return _downKeys.slice(0);
+	  }
+
+	  function filter(event){
+	    var tagName = (event.target || event.srcElement).tagName;
+	    // ignore keypressed in any elements that support keyboard data input
+	    return !(tagName == 'INPUT' || tagName == 'SELECT' || tagName == 'TEXTAREA');
+	  }
+
+	  // initialize key.<modifier> to false
+	  for(k in _MODIFIERS) assignKey[k] = false;
+
+	  // set current scope (default 'all')
+	  function setScope(scope){ _scope = scope || 'all' };
+	  function getScope(){ return _scope || 'all' };
+
+	  // delete all handlers for a given scope
+	  function deleteScope(scope){
+	    var key, handlers, i;
+
+	    for (key in _handlers) {
+	      handlers = _handlers[key];
+	      for (i = 0; i < handlers.length; ) {
+	        if (handlers[i].scope === scope) handlers.splice(i, 1);
+	        else i++;
+	      }
+	    }
+	  };
+
+	  // abstract key logic for assign and unassign
+	  function getKeys(key) {
+	    var keys;
+	    key = key.replace(/\s/g, '');
+	    keys = key.split(',');
+	    if ((keys[keys.length - 1]) == '') {
+	      keys[keys.length - 2] += ',';
+	    }
+	    return keys;
+	  }
+
+	  // abstract mods logic for assign and unassign
+	  function getMods(key) {
+	    var mods = key.slice(0, key.length - 1);
+	    for (var mi = 0; mi < mods.length; mi++)
+	    mods[mi] = _MODIFIERS[mods[mi]];
+	    return mods;
+	  }
+
+	  // cross-browser events
+	  function addEvent(object, event, method) {
+	    if (object.addEventListener)
+	      object.addEventListener(event, method, false);
+	    else if(object.attachEvent)
+	      object.attachEvent('on'+event, function(){ method(window.event) });
+	  };
+
+	  // set the handlers globally on document
+	  addEvent(document, 'keydown', function(event) { dispatch(event) }); // Passing _scope to a callback to ensure it remains the same by execution. Fixes #48
+	  addEvent(document, 'keyup', clearModifier);
+
+	  // reset modifiers to false whenever the window is (re)focused.
+	  addEvent(window, 'focus', resetModifiers);
+
+	  // store previously defined key
+	  var previousKey = global.key;
+
+	  // restore previously defined key and return reference to our key object
+	  function noConflict() {
+	    var k = global.key;
+	    global.key = previousKey;
+	    return k;
+	  }
+
+	  // set window.key and window.key.set/get/deleteScope, and the default filter
+	  global.key = assignKey;
+	  global.key.setScope = setScope;
+	  global.key.getScope = getScope;
+	  global.key.deleteScope = deleteScope;
+	  global.key.filter = filter;
+	  global.key.isPressed = isPressed;
+	  global.key.getPressedKeyCodes = getPressedKeyCodes;
+	  global.key.noConflict = noConflict;
+	  global.key.unbind = unbindKey;
+
+	  if(true) module.exports = assignKey;
+
+	})(this);
+
+
+/***/ },
+/* 170 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var storage = __webpack_require__(12)
@@ -19829,16 +21268,45 @@
 	      }
 	    }
 
+	    ,rm: function(filename) {
+	      if (!filename) return;
+
+	      if (! (filename instanceof Array))
+	        filename = [filename];
+
+	      if (confirm("About to remove files:\n\n-----\n\n" + filename.join("\n") + '\n\n-----\n\nReally do it?')) {
+	        filename.forEach(function(f) {
+	          storage.files.store.removeItem(f)
+	        })
+	      }
+	    }
+
+	    ,list_files: function() {
+	      storage.files.store.keys(function(e, ks) {
+	        if (e) throw e;
+	        console.log(ks)
+	      })
+	    }
+
 	    ,storage: storage
 	  }
 
 	  window.md.css.editor = window.md.css.bind(null, $ed, 'editor')
 	  window.md.css.preview = window.md.css.bind(null, $preview, 'preview')
 
+	  print_help()
+
 	}
 
 	function print_help() {
 	  var _ = function(x,s){ console.log('%c'+x, s||'')}
+	    , cmdcss = 'font-family:monospace;padding:4px;display:inline-block;background:#f2f2f2;font-weight:bold;'
+
+	  console.group("%cKeyboard Shortcuts:", 'font-weight:bold;font-size:1.125em;')
+	  _("<" + (is_mac() ? "cmd" : "ctrl") + "-s> :: Save/name file")
+	  _("<ctrl-p> :: Find saved file")
+	  console.groupEnd()
+	  _("")
 
 	  console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
 	  _("md.sync_scroll( Bool )")
@@ -19846,11 +21314,19 @@
 	  _("md.preview_css( {...} )")
 	  _("md.reset_config()")
 	  console.groupEnd()
-	  _("\nConfiguration settings will be persisted across sessions", "font-style:italic")
+	  _("")
+	  
+	  if (! is_mac()) {
+	    $('.windosx').text('ctrl')
+	  }
 	}
 
 	function clog() {
 	  console.log.apply(console, arguments)
+	}
+
+	function is_mac() {
+	  return ['Mac68K', 'MacPPC', 'MacIntel'].indexOf(navigator.platform)
 	}
 
 
@@ -19859,7 +21335,7 @@
 
 
 /***/ },
-/* 158 */
+/* 171 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {  /* globals require, module */
@@ -19870,7 +21346,7 @@
 	   * Module dependencies.
 	   */
 
-	  var pathtoRegexp = __webpack_require__(159);
+	  var pathtoRegexp = __webpack_require__(172);
 
 	  /**
 	   * Module exports.
@@ -20485,10 +21961,10 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14)))
 
 /***/ },
-/* 159 */
+/* 172 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isarray = __webpack_require__(160)
+	var isarray = __webpack_require__(173)
 
 	/**
 	 * Expose `pathToRegexp`.
@@ -20881,7 +22357,7 @@
 
 
 /***/ },
-/* 160 */
+/* 173 */
 /***/ function(module, exports) {
 
 	module.exports = Array.isArray || function (arr) {

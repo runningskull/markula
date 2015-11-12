@@ -16,6 +16,7 @@ var throttle = require('lodash.throttle')
   , storage = require('./storage')
   , hljs = require('highlight.js')
   , flow = require('lodash.flow')
+  , search = require('./search')
   , pad = require('lodash.pad')
   , marked = require('marked')
   , key = require('keymaster')
@@ -30,12 +31,16 @@ var cfg = {
 
 // Common references
 var sync_scroll = scroll_syncer()
-  , $preview = $('#preview')
   , $eframe = $('#editor-frame')
   , $md = $('.markdown-body')
+  , $preview = $('#preview')
+  , $flist = $('#file-list')
   , $ed = $('#editor')
   , $bod = $('body')
   , $rs = $('#rs')
+
+var $flist_frame = $flist.parent()
+  , $flist_search = $('#file-list-search')
 
 var CURRENT_FILE = null
 
@@ -52,6 +57,7 @@ $(function() {
   listen_for_input()
 
   init_key_shortcuts()
+  init_file_search()
   help.init($ed, $preview)
 
   // kick things off
@@ -81,9 +87,14 @@ function save_file(cb) {
 }
 
 function handle_route(render, ctx) {
+  $flist_frame.hide()
+  $flist_search.val('')
+
   CURRENT_FILE = ctx.params.file_id
   document.title = '✎ ' + ctx.params.file_id + '.md'
   render && load_file()
+
+  $ed.focus()
 }
 
 
@@ -119,7 +130,7 @@ function init_routing() {
 }
 
 function init_key_shortcuts() {
-  key.filter = function(){ return true } // always listen for key shortcuts, even in inputs
+  key.filter = function(){ return true }
 
   key('command+s, ctrl+s', function() {
     if (!CURRENT_FILE || (CURRENT_FILE == cfg.default_filename)) {
@@ -145,6 +156,32 @@ function init_key_shortcuts() {
 
     return false
   })
+
+  key('ctrl+p', function() {
+    storage.files.store.keys(function(e, ks) {
+      if (e) throw e;
+
+      key.setScope('file-list')
+      $flist_frame.show()
+
+      populate_file_list(ks)
+
+      $flist_search.focus()
+    })
+
+    return false
+  })
+
+  key('escape', 'file-list', function() {
+    $flist_frame.hide()
+    key.setScope(null)
+    return false
+  })
+}
+
+function init_file_search() {
+  search.init()
+  listen_for_search()
 }
 
 function load_config() {
@@ -207,6 +244,20 @@ function listen_for_input() {
   $ed.on('input', throttle(flow(_render, save_file), 20))
 }
 
+function listen_for_search() {
+  $flist_search.on('input', function() {
+    var q = $flist_search.val()
+    populate_file_list(search.search(q))
+  })
+}
+
+
+function populate_file_list(ks) {
+  $flist.empty()
+  ks.forEach(function(k) {
+    $flist.append('<li><a href="/#!'+k+'">'+k+'</li>')
+  })
+}
 
 function position_divider(xpx) {
   if (xpx == undefined) return;
@@ -225,7 +276,6 @@ function resize_frames(xpx, ww) {
   $eframe.css({width: x+'%'})
   $preview.css({left:x+'%', width:xx+'%'})
 }
-
 
 function into(obj, k, opts) {
   /* Returns a function that puts a 'val' into field 'k' of 'obj', returning 'val'

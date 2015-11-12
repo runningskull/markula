@@ -44,16 +44,45 @@ function init($ed, $preview) {
       }
     }
 
+    ,rm: function(filename) {
+      if (!filename) return;
+
+      if (! (filename instanceof Array))
+        filename = [filename];
+
+      if (confirm("About to remove files:\n\n-----\n\n" + filename.join("\n") + '\n\n-----\n\nReally do it?')) {
+        filename.forEach(function(f) {
+          storage.files.store.removeItem(f)
+        })
+      }
+    }
+
+    ,list_files: function() {
+      storage.files.store.keys(function(e, ks) {
+        if (e) throw e;
+        console.log(ks)
+      })
+    }
+
     ,storage: storage
   }
 
   window.md.css.editor = window.md.css.bind(null, $ed, 'editor')
   window.md.css.preview = window.md.css.bind(null, $preview, 'preview')
 
+  print_help()
+
 }
 
 function print_help() {
   var _ = function(x,s){ console.log('%c'+x, s||'')}
+    , cmdcss = 'font-family:monospace;padding:4px;display:inline-block;background:#f2f2f2;font-weight:bold;'
+
+  console.group("%cKeyboard Shortcuts:", 'font-weight:bold;font-size:1.125em;')
+  _("<" + (is_mac() ? "cmd" : "ctrl") + "-s> :: Save/name file")
+  _("<ctrl-p> :: Find saved file")
+  console.groupEnd()
+  _("")
 
   console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
   _("md.sync_scroll( Bool )")
@@ -61,11 +90,19 @@ function print_help() {
   _("md.preview_css( {...} )")
   _("md.reset_config()")
   console.groupEnd()
-  _("\nConfiguration settings will be persisted across sessions", "font-style:italic")
+  _("")
+  
+  if (! is_mac()) {
+    $('.windosx').text('ctrl')
+  }
 }
 
 function clog() {
   console.log.apply(console, arguments)
+}
+
+function is_mac() {
+  return ['Mac68K', 'MacPPC', 'MacIntel'].indexOf(navigator.platform)
 }
 
 
