@@ -158,7 +158,7 @@
 	  var router = director.Router({
 	    '/': {
 	       '': handle_route
-	      ,'/(\\w+)(.md)?': {on: handle_route}
+	      ,'/([\\w$-_.+!*\'(),]+)(.md)?': {on: handle_route}
 	    }
 	  })
 
