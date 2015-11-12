@@ -314,7 +314,7 @@
 	function populate_file_list(ks) {
 	  $flist.empty()
 	  ks.forEach(function(k) {
-	    $flist.append('<li><a href="/#/'+k+'">'+k+'</li>')
+	    $flist.append('<li><a href="#/'+k+'">'+k+'</li>')
 	  })
 	}
 
