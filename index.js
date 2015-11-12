@@ -1,10 +1,12 @@
 
 //------------------------------------------------------------------------------
-// CSS
+// Externs
 
 require('github-markdown-css/github-markdown.css')
 require('highlight.js/styles/github.css')
 require('./style.css')
+
+require('jquery-tabby')
 
 
 
@@ -52,6 +54,7 @@ init_routing()
 $(function() {
   load_config()
 
+  init_editor()
   listen_for_resize()
   listen_for_scroll()
   listen_for_input()
@@ -127,6 +130,10 @@ function init_routing() {
 
   // default page
   page('/', function(){ CURRENT_FILE = cfg.default_filename})
+}
+
+function init_editor() {
+  $ed.tabby({tabString: '    '})
 }
 
 function init_key_shortcuts() {
@@ -294,4 +301,5 @@ function into(obj, k, opts) {
     else { obj[k](val); return val }
   }
 }
+
 
