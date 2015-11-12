@@ -16,13 +16,16 @@ var throttle = require('lodash.throttle')
   , storage = require('./storage')
   , hljs = require('highlight.js')
   , flow = require('lodash.flow')
+  , pad = require('lodash.pad')
   , marked = require('marked')
+  , key = require('keymaster')
   , help = require('./help')
   , page = require('page')
 
 // Config
 var cfg = {
-  sync_scroll: true
+   sync_scroll: true
+  ,default_filename: '*scratch*'
 }
 
 // Common references
@@ -48,6 +51,7 @@ $(function() {
   listen_for_scroll()
   listen_for_input()
 
+  init_key_shortcuts()
   help.init($ed, $preview)
 
   // kick things off
@@ -69,14 +73,16 @@ function render(md) {
   highlight()
 }
 
-function save_file() {
+function save_file(cb) {
   var md = $ed.val()
-  storage.files(CURRENT_FILE, md)
+  if ('function' != typeof cb) cb = undefined;
+  storage.files(CURRENT_FILE, md, cb)
   return md
 }
 
 function handle_route(render, ctx) {
   CURRENT_FILE = ctx.params.file_id
+  document.title = '✎ ' + ctx.params.file_id + '.md'
   render && load_file()
 }
 
@@ -101,14 +107,44 @@ function scroll_syncer() {
 
 function init_routing() {
   // triggered on initial page load
+  page(':file_id.md', handle_route.bind(null, true))
   page(':file_id', handle_route.bind(null, true))
 
   // triggered on navigation
+  page('/:file_id.md', handle_route.bind(null, true))
   page('/:file_id', handle_route.bind(null, true))
 
   // default page
-  page('/', function(){ CURRENT_FILE = '*scratch*' })
+  page('/', function(){ CURRENT_FILE = cfg.default_filename})
 }
+
+function init_key_shortcuts() {
+  key.filter = function(){ return true } // always listen for key shortcuts, even in inputs
+
+  key('command+s, ctrl+s', function() {
+    if (!CURRENT_FILE || (CURRENT_FILE == cfg.default_filename)) {
+      // save as a named file
+      var file_name = prompt('Name this file:')
+      if (file_name) {
+        CURRENT_FILE = file_name
+        save_file(function(){ page(file_name) })
+        storage.files(cfg.default_filename, '')
+      }
+    } else {
+      // placebo
+      var delay = 210
+        , old = document.title
+
+      document.title = '✔ Saved'
+      setTimeout(function(){ document.title = '✔ ' },       delay)
+      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 2)
+      setTimeout(function(){ document.title = '✔ ' },       delay * 3)
+      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 4)
+      setTimeout(function(){ document.title = old},         delay * 9)
+    }
+
+    return false
+  })
 }
 
 function load_config() {
