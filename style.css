@@ -37,6 +37,7 @@
   height: 100%;
   width: 100%;
   padding: 50px 100px;
+  padding-bottom: 500px;
 
   font-size: 15px;
   font-family: "Source Code Pro", "Monaco", "Consolas", monospace;
@@ -69,6 +70,7 @@
   left: 0;
   width: 100%;
   padding: 50px;
+  margin-bottom: 500px;
   -webkit-font-smoothing: subpixel-antialiased;
 }
 
