@@ -1,5 +1,4 @@
 
-
 //------------------------------------------------------------------------------
 // CSS
 
@@ -14,9 +13,11 @@ require('./style.css')
 
 // Libraries
 var throttle = require('lodash.throttle')
-  , storage = require('localforage')
+  , storage = require('./storage')
   , hljs = require('highlight.js')
+  , flow = require('lodash.flow')
   , marked = require('marked')
+  , help = require('./help')
 
 // Config
 var cfg = {
@@ -24,9 +25,7 @@ var cfg = {
 }
 
 // Common references
-var highlight = throttle(highlight_, 2000)
-  , render = throttle(render_, 20)
-  , sync_scroll = ScrollSyncer()
+var sync_scroll = scroll_syncer()
   , $preview = $('#preview')
   , $eframe = $('#editor-frame')
   , $md = $('.markdown-body')
@@ -36,62 +35,40 @@ var highlight = throttle(highlight_, 2000)
 
 
 // App
+
 $(function() {
-  set_storage_config()
   load_saved_data()
+
   listen_for_resize()
+  listen_for_scroll()
+  listen_for_input()
 
-  $ed.on('scroll', function() {
-    sync_scroll($(this), $preview)
-  })
-
-  $preview.on('scroll', function() {
-    sync_scroll($(this), $ed)
-  })
-
-
-  $ed.on('input', render)
-  render()
-
-  print_help()
+  help.init($ed, $preview)
 })
 
 
-//------------------------------------------------------------------------------
 // Private Helpers
 
-function render_() {
-  var md = $ed.val()
+var highlight = throttle(function() {
+  $preview.find('pre code').each(function(i, block) {
+    hljs.highlightBlock(block)
+  })
+}, 2000)
 
-  persist('md', md)
-
+function render(md) {
+  md || (md = $ed.val())
   $md.html(marked(md))
   highlight()
 }
 
-function highlight_() {
-  $preview.find('pre code').each(function(i, block) {
-    hljs.highlightBlock(block)
-  })
+function save_file() {
+  var md = $ed.val()
+  storage.files('md', md)
+  return md
 }
 
-function set_storage_config() {
-  storage.config({
-     name: 'markula'
-    ,storeName: 'md'
-  })
-}
 
-function load_saved_data() {
-  load_into('md', $ed, 'val')
-  load_into('editor-css', $ed, 'css', {default: {}})
-  load_into('preview-css', $preview, 'css', {default: {}})
-  load_into('sync-scroll', cfg, 'sync_scroll', {assign:true, default:true})
-
-  cfg_load('rs-position', position_divider)
-}
-
-function ScrollSyncer() {
+function scroll_syncer() {
   var dirty = false
 
   return function($source, $target) {
@@ -108,14 +85,23 @@ function ScrollSyncer() {
   }
 }
 
+
+function load_saved_data() {
+  storage.files('md', flow(into($ed, 'val'), render))
+
+  storage.config('editor-css', into($ed, 'css', {default: {}}))
+  storage.config('preview-css', into($preview, 'css', {default: {}}))
+  storage.config('sync-scroll', into(cfg, 'sync_scroll', {assign:true, default:true}))
+
+  storage.config('rs-position', position_divider)
+}
+
 function listen_for_resize() {
   var $doc = $(document)
     , $bod = $('body')
 
-  var ww
-
-  $rs.on('dragstart', function(){ 
-    ww = window.innerWidth
+  $rs.on('dragstart.resize', function() { 
+    var ww = window.innerWidth
 
     $ed.css({"user-select": "none"})
     $preview.css({"user-select": "none"})
@@ -143,6 +129,30 @@ function listen_for_resize() {
   })
 }
 
+function listen_for_scroll() {
+  $ed.on('scroll.markula', function() {
+    sync_scroll($(this), $preview)
+  })
+
+  $preview.on('scroll.markula', function() {
+    sync_scroll($(this), $ed)
+  })
+}
+
+function listen_for_input() {
+  var _render = render.bind(null,null)
+  $ed.on('input', throttle(flow(_render, save_file), 20))
+}
+
+
+function position_divider(xpx) {
+  if (xpx == undefined) return;
+  var ww = window.innerWidth
+  resize_frames(xpx, ww)
+  $rs.css({left: xpx})
+  $bod.removeClass('resizing')
+}
+
 function resize_frames(xpx, ww) {
   ww || (ww = window.innerWidth)
 
@@ -153,26 +163,9 @@ function resize_frames(xpx, ww) {
   $preview.css({left:x+'%', width:xx+'%'})
 }
 
-function position_divider(xpx) {
-  if (xpx == undefined) return;
-  var ww = window.innerWidth
-  resize_frames(xpx, ww)
-  $rs.css({left: xpx})
-  $bod.removeClass('resizing')
-}
 
-
-function persist(k, v) { storage.setItem('mdcfg-'+k, v) }
-function unpersist(k) { storage.removeItem('mdcfg-'+k) }
-function cfg_load(k, cb) { return storage.getItem('mdcfg-'+k, with_throwing(cb)) }
-
-function with_throwing(f) { return function(e) { 
-  if (e) throw e; 
-  f.apply(this, Array.prototype.slice.call(arguments, 1))
-}}
-
-function load_into(k, obj, field, opts) {
-  /* Load stored config field 'k' into 'obj.field`.
+function into(obj, k, opts) {
+  /* Returns a function that puts a 'val' into field 'k' of 'obj', returning 'val'
    * Options:
    *  - assign: if true, do obj.field = x ; if false, obj.field(x)
    *  - default: provide a default value if config field not found
@@ -180,61 +173,12 @@ function load_into(k, obj, field, opts) {
 
   opts || (opts = {})
 
-  cfg_load(k, function(v) {
-    if (opts.default && (v == null))
-      v = opts.default;
+  return function(val) {
+    if (opts.default && (val == null))
+      val = opts.default;
 
-    if (opts.assign) { obj[field] = v } 
-    else { obj[field](v) }
-  })
-}
-
-
-//------------------------------------------------------------------------------
-// Configuration Interface
-
-function print_help() {
-  var _ = function(x,s){ console.log('%c'+x, s||'')}
-
-  console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
-  _("md.sync_scroll( Bool )")
-  _("md.editor_css( {...} )")
-  _("md.preview_css( {...} )")
-  _("md.reset_config()")
-  console.groupEnd()
-  _("\nConfiguration settings will be persisted across sessions", "font-style:italic")
-}
-
-window.md = {
-  sync_scroll: function(b) { 
-    if (b===undefined) { return cfg_load('sync-scroll') }
-    persist('sync-scroll', b)
-    cfg.sync_scroll = b
+    if (opts.assign) { return obj[k] = val } 
+    else { obj[k](val); return val }
   }
-
-  ,editor_css: function(css) {
-    if (css===undefined) { return JSON.parse(cfg_load('editor-css')) }
-    persist('editor-css', JSON.stringify(css))
-    $ed.css(css)
-  }
-
-  ,preview_css: function(css) {
-    if (css===undefined) { return JSON.parse(cfg_load('preview-css')) }
-    persist('preview-css', JSON.stringify(css))
-    $preview.css(css)
-  }
-
-  ,reset_config: function() {
-    if (confirm("Erase saved config?")) {
-      ['sync-scroll', 
-        'editor-css', 
-        'preview-css',
-        'rs-position'].forEach(unpersist)
-
-      location.reload()
-    }
-  }
-
-  ,storage: storage
 }
 
