@@ -203,6 +203,13 @@
 	    return false
 	  })
 
+	  key('ctrl+=', function() {
+	    storage.config('sync-scroll', function(current) {
+	      cfg.sync_scroll = !current
+	      storage.config('sync-scroll', !current)
+	    })
+	  })
+
 	  key('ctrl+p', function() {
 	    storage.files.store.keys(function(e, ks) {
 	      if (e) throw e;
@@ -22303,6 +22310,7 @@
 	  console.group("%cKeyboard Shortcuts:", 'font-weight:bold;font-size:1.125em;')
 	  _("<" + (is_mac() ? "cmd" : "ctrl") + "-s> :: Save/name file")
 	  _("<ctrl-p> :: Find saved file")
+	  _("<ctrl-=> :: Toggle scroll syncing")
 	  console.groupEnd()
 	  _("")
 

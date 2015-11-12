@@ -157,6 +157,13 @@ function init_key_shortcuts() {
     return false
   })
 
+  key('ctrl+=', function() {
+    storage.config('sync-scroll', function(current) {
+      cfg.sync_scroll = !current
+      storage.config('sync-scroll', !current)
+    })
+  })
+
   key('ctrl+p', function() {
     storage.files.store.keys(function(e, ks) {
       if (e) throw e;

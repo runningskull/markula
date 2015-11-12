@@ -81,6 +81,7 @@ function print_help() {
   console.group("%cKeyboard Shortcuts:", 'font-weight:bold;font-size:1.125em;')
   _("<" + (is_mac() ? "cmd" : "ctrl") + "-s> :: Save/name file")
   _("<ctrl-p> :: Find saved file")
+  _("<ctrl-=> :: Toggle scroll syncing")
   console.groupEnd()
   _("")
 
