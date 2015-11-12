@@ -220,7 +220,7 @@ function listen_for_resize() {
       $doc.off('.resizing')
       $rs.off('.resizing')
 
-      persist('rs-position', e.pageX)
+      storage.config('rs-position', e.pageX)
     })
 
     $rs.on('drag.resizing', function (e) {
