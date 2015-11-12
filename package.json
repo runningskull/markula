@@ -4,17 +4,18 @@
   "description": "Minimal acceptable markdown editor",
   "main": "index.js",
   "dependencies": {
-    "css-loader": "0.22.0",
     "fuzzy": "0.1.1",
     "github-markdown-css": "2.1.0",
     "highlight.js": "8.9.1",
+    "jquery-tabby": "git://github.com/runningskull/Tabby.git",
+    "keymaster": "1.6.2",
     "localforage": "1.3.0",
+    "lodash.at": "3.2.0",
     "lodash.flow": "3.2.1",
+    "lodash.pad": "3.1.1",
     "lodash.throttle": "3.0.4",
     "marked": "0.3.5",
-    "page": "1.6.4",
-    "style-loader": "0.13.0",
-    "webpack": "1.12.3"
+    "page": "1.6.4"
   },
   "devDependencies": {
     "css-loader": "0.22.0",
