@@ -15,8 +15,9 @@ require('jquery-tabby')
 
 // Libraries
 var throttle = require('lodash.throttle')
+  , routing = require('./lib/routing')
   , storage = require('./lib/storage')
-  , director = require('director')
+  , render = require('./lib/render')
   , hljs = require('highlight.js')
   , flow = require('lodash.flow')
   , help = require('./lib/help')
@@ -24,12 +25,12 @@ var throttle = require('lodash.throttle')
   , pad = require('lodash.pad')
   , marked = require('marked')
   , cfg = require('./lib/cfg')
+  , u = require('./lib/util')
   , d = require('./lib/dom')
 
 
 var sync_scroll = scroll_syncer()
-var CURRENT_FILE = null
-var router = init_routing()
+var router = routing.init()
 
 
 // App
@@ -49,22 +50,10 @@ $(function() {
 
 // Private Helpers
 
-var highlight = throttle(function() {
-  d.preview.find('pre code').each(function(i, block) {
-    hljs.highlightBlock(block)
-  })
-}, 2000)
-
-function render(md) {
-  md || (md = d.ed.val())
-  d.md.html(marked(md))
-  highlight()
-}
-
 function save_file(cb) {
   var md = d.ed.val()
   if ('function' != typeof cb) cb = undefined;
-  storage.files(CURRENT_FILE, md, cb)
+  storage.files(cfg.CURRENT_FILE, md, cb)
   return md
 }
 
@@ -87,40 +76,16 @@ function scroll_syncer() {
 }
 
 
-function init_routing() {
-  if (document.location.hash == '')
-    document.location.hash = "/";
-
-  var router = director.Router({
-    '/': {
-       '': handle_route
-      ,'/([\\w$-_.+!*\'(),]+)(.md)?': {on: handle_route}
-    }
-  })
-
-  // var router_nohash = director.Router({'/$': handle_route})
-  //                             .configure({html5history: true})
-
-  router.init()
-  // router_nohash.init()
-
-  return router
-}
-
 function init_editor() {
   d.ed.tabby({tabString: '    '})
 }
 
 function load_config() {
-  storage.config('editor-css', into(d.ed, 'css', {default: {}}))
-  storage.config('preview-css', into(d.preview, 'css', {default: {}}))
-  storage.config('sync-scroll', into(cfg, 'sync_scroll', {assign:true, default:true}))
+  storage.config('editor-css', u.into(d.ed, 'css', {default: {}}))
+  storage.config('preview-css', u.into(d.preview, 'css', {default: {}}))
+  storage.config('sync-scroll', u.into(cfg, 'sync_scroll', {assign:true, default:true}))
 
   storage.config('rs-position', position_divider)
-}
-
-function load_file() {
-  storage.files(CURRENT_FILE, flow(into(d.ed, 'val'), render))
 }
 
 function listen_for_resize() {
@@ -172,19 +137,6 @@ function listen_for_input() {
 }
 
 
-function handle_route(file_id) {
-  file_id == null && (file_id = cfg.default_filename)
-
-  d.flist_frame.hide()
-  d.flist_search.val('')
-
-  CURRENT_FILE = file_id
-  document.title = '✎ ' + file_id + '.md'
-  load_file()
-
-  d.ed.focus()
-}
-
 function position_divider(xpx) {
   if (xpx == undefined) return;
   var ww = window.innerWidth
@@ -201,24 +153,6 @@ function resize_frames(xpx, ww) {
 
   d.eframe.css({width: x+'%'})
   d.preview.css({left:x+'%', width:xx+'%'})
-}
-
-function into(obj, k, opts) {
-  /* Returns a function that puts a 'val' into field 'k' of 'obj', returning 'val'
-   * Options:
-   *  - assign: if true, do obj.field = x ; if false, obj.field(x)
-   *  - default: provide a default value if config field not found
-   */
-
-  opts || (opts = {})
-
-  return function(val) {
-    if (opts.default && (val == null))
-      val = opts.default;
-
-    if (opts.assign) { return obj[k] = val } 
-    else { obj[k](val); return val }
-  }
 }
 
 

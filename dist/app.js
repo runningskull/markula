@@ -61,21 +61,22 @@
 
 	// Libraries
 	var throttle = __webpack_require__(10)
-	  , storage = __webpack_require__(13)
-	  , director = __webpack_require__(17)
-	  , hljs = __webpack_require__(18)
-	  , flow = __webpack_require__(157)
-	  , help = __webpack_require__(158)
-	  , keys = __webpack_require__(159)
-	  , pad = __webpack_require__(171)
-	  , marked = __webpack_require__(175)
-	  , cfg = __webpack_require__(169)
-	  , d = __webpack_require__(170)
+	  , routing = __webpack_require__(13)
+	  , storage = __webpack_require__(15)
+	  , render = __webpack_require__(19)
+	  , hljs = __webpack_require__(20)
+	  , flow = __webpack_require__(161)
+	  , help = __webpack_require__(164)
+	  , keys = __webpack_require__(165)
+	  , pad = __webpack_require__(175)
+	  , marked = __webpack_require__(159)
+	  , cfg = __webpack_require__(162)
+	  , u = __webpack_require__(163)
+	  , d = __webpack_require__(160)
 
 
 	var sync_scroll = scroll_syncer()
-	var CURRENT_FILE = null
-	var router = init_routing()
+	var router = routing.init()
 
 
 	// App
@@ -95,22 +96,10 @@
 
 	// Private Helpers
 
-	var highlight = throttle(function() {
-	  d.preview.find('pre code').each(function(i, block) {
-	    hljs.highlightBlock(block)
-	  })
-	}, 2000)
-
-	function render(md) {
-	  md || (md = d.ed.val())
-	  d.md.html(marked(md))
-	  highlight()
-	}
-
 	function save_file(cb) {
 	  var md = d.ed.val()
 	  if ('function' != typeof cb) cb = undefined;
-	  storage.files(CURRENT_FILE, md, cb)
+	  storage.files(cfg.CURRENT_FILE, md, cb)
 	  return md
 	}
 
@@ -133,40 +122,16 @@
 	}
 
 
-	function init_routing() {
-	  if (document.location.hash == '')
-	    document.location.hash = "/";
-
-	  var router = director.Router({
-	    '/': {
-	       '': handle_route
-	      ,'/([\\w$-_.+!*\'(),]+)(.md)?': {on: handle_route}
-	    }
-	  })
-
-	  // var router_nohash = director.Router({'/$': handle_route})
-	  //                             .configure({html5history: true})
-
-	  router.init()
-	  // router_nohash.init()
-
-	  return router
-	}
-
 	function init_editor() {
 	  d.ed.tabby({tabString: '    '})
 	}
 
 	function load_config() {
-	  storage.config('editor-css', into(d.ed, 'css', {default: {}}))
-	  storage.config('preview-css', into(d.preview, 'css', {default: {}}))
-	  storage.config('sync-scroll', into(cfg, 'sync_scroll', {assign:true, default:true}))
+	  storage.config('editor-css', u.into(d.ed, 'css', {default: {}}))
+	  storage.config('preview-css', u.into(d.preview, 'css', {default: {}}))
+	  storage.config('sync-scroll', u.into(cfg, 'sync_scroll', {assign:true, default:true}))
 
 	  storage.config('rs-position', position_divider)
-	}
-
-	function load_file() {
-	  storage.files(CURRENT_FILE, flow(into(d.ed, 'val'), render))
 	}
 
 	function listen_for_resize() {
@@ -218,19 +183,6 @@
 	}
 
 
-	function handle_route(file_id) {
-	  file_id == null && (file_id = cfg.default_filename)
-
-	  d.flist_frame.hide()
-	  d.flist_search.val('')
-
-	  CURRENT_FILE = file_id
-	  document.title = '✎ ' + file_id + '.md'
-	  load_file()
-
-	  d.ed.focus()
-	}
-
 	function position_divider(xpx) {
 	  if (xpx == undefined) return;
 	  var ww = window.innerWidth
@@ -247,24 +199,6 @@
 
 	  d.eframe.css({width: x+'%'})
 	  d.preview.css({left:x+'%', width:xx+'%'})
-	}
-
-	function into(obj, k, opts) {
-	  /* Returns a function that puts a 'val' into field 'k' of 'obj', returning 'val'
-	   * Options:
-	   *  - assign: if true, do obj.field = x ; if false, obj.field(x)
-	   *  - default: provide a default value if config field not found
-	   */
-
-	  opts || (opts = {})
-
-	  return function(val) {
-	    if (opts.default && (val == null))
-	      val = opts.default;
-
-	    if (opts.assign) { return obj[k] = val } 
-	    else { obj[k](val); return val }
-	  }
 	}
 
 
@@ -1442,9 +1376,797 @@
 /* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
+	var director = __webpack_require__(14)
+	  , storage = __webpack_require__(15)
+	  , render = __webpack_require__(19)
+	  , flow = __webpack_require__(161)
+	  , cfg = __webpack_require__(162)
+	  , u = __webpack_require__(163)
+	  , d = __webpack_require__(160)
+
+	function init_routing() {
+	  if (document.location.hash == '')
+	    document.location.hash = "/";
+
+	  var router = director.Router({
+	    '/': {
+	       '': handle_route
+	      ,'/([\\w$-_.+!*\'(),]+)(.md)?': {on: handle_route}
+	    }
+	  })
+
+	  // var router_nohash = director.Router({'/$': handle_route})
+	  //                             .configure({html5history: true})
+
+	  router.init()
+	  // router_nohash.init()
+
+	  module.exports.router = router
+	  return router
+	}
+
+	function handle_route(file_id) {
+	  file_id == null && (file_id = cfg.default_filename)
+
+	  d.flist_frame.hide()
+	  d.flist_search.val('')
+
+	  cfg.CURRENT_FILE = file_id
+	  document.title = '✎ ' + file_id + '.md'
+	  load_file()
+
+	  d.ed.focus()
+	}
+
+	function load_file() {
+	  storage.files(cfg.CURRENT_FILE, flow(u.into(d.ed, 'val'), render))
+	}
+
+
+	module.exports = {
+	   init: init_routing
+	  ,router: null
+	}
+
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+
+	//
+	// Generated on Tue Dec 16 2014 12:13:47 GMT+0100 (CET) by Charlie Robbins, Paolo Fragomeni & the Contributors (Using Codesurgeon).
+	// Version 1.2.6
+	//
+
+	(function (exports) {
+
+	/*
+	 * browser.js: Browser specific functionality for director.
+	 *
+	 * (C) 2011, Charlie Robbins, Paolo Fragomeni, & the Contributors.
+	 * MIT LICENSE
+	 *
+	 */
+
+	var dloc = document.location;
+
+	function dlocHashEmpty() {
+	  // Non-IE browsers return '' when the address bar shows '#'; Director's logic
+	  // assumes both mean empty.
+	  return dloc.hash === '' || dloc.hash === '#';
+	}
+
+	var listener = {
+	  mode: 'modern',
+	  hash: dloc.hash,
+	  history: false,
+
+	  check: function () {
+	    var h = dloc.hash;
+	    if (h != this.hash) {
+	      this.hash = h;
+	      this.onHashChanged();
+	    }
+	  },
+
+	  fire: function () {
+	    if (this.mode === 'modern') {
+	      this.history === true ? window.onpopstate() : window.onhashchange();
+	    }
+	    else {
+	      this.onHashChanged();
+	    }
+	  },
+
+	  init: function (fn, history) {
+	    var self = this;
+	    this.history = history;
+
+	    if (!Router.listeners) {
+	      Router.listeners = [];
+	    }
+
+	    function onchange(onChangeEvent) {
+	      for (var i = 0, l = Router.listeners.length; i < l; i++) {
+	        Router.listeners[i](onChangeEvent);
+	      }
+	    }
+
+	    //note IE8 is being counted as 'modern' because it has the hashchange event
+	    if ('onhashchange' in window && (document.documentMode === undefined
+	      || document.documentMode > 7)) {
+	      // At least for now HTML5 history is available for 'modern' browsers only
+	      if (this.history === true) {
+	        // There is an old bug in Chrome that causes onpopstate to fire even
+	        // upon initial page load. Since the handler is run manually in init(),
+	        // this would cause Chrome to run it twise. Currently the only
+	        // workaround seems to be to set the handler after the initial page load
+	        // http://code.google.com/p/chromium/issues/detail?id=63040
+	        setTimeout(function() {
+	          window.onpopstate = onchange;
+	        }, 500);
+	      }
+	      else {
+	        window.onhashchange = onchange;
+	      }
+	      this.mode = 'modern';
+	    }
+	    else {
+	      //
+	      // IE support, based on a concept by Erik Arvidson ...
+	      //
+	      var frame = document.createElement('iframe');
+	      frame.id = 'state-frame';
+	      frame.style.display = 'none';
+	      document.body.appendChild(frame);
+	      this.writeFrame('');
+
+	      if ('onpropertychange' in document && 'attachEvent' in document) {
+	        document.attachEvent('onpropertychange', function () {
+	          if (event.propertyName === 'location') {
+	            self.check();
+	          }
+	        });
+	      }
+
+	      window.setInterval(function () { self.check(); }, 50);
+
+	      this.onHashChanged = onchange;
+	      this.mode = 'legacy';
+	    }
+
+	    Router.listeners.push(fn);
+
+	    return this.mode;
+	  },
+
+	  destroy: function (fn) {
+	    if (!Router || !Router.listeners) {
+	      return;
+	    }
+
+	    var listeners = Router.listeners;
+
+	    for (var i = listeners.length - 1; i >= 0; i--) {
+	      if (listeners[i] === fn) {
+	        listeners.splice(i, 1);
+	      }
+	    }
+	  },
+
+	  setHash: function (s) {
+	    // Mozilla always adds an entry to the history
+	    if (this.mode === 'legacy') {
+	      this.writeFrame(s);
+	    }
+
+	    if (this.history === true) {
+	      window.history.pushState({}, document.title, s);
+	      // Fire an onpopstate event manually since pushing does not obviously
+	      // trigger the pop event.
+	      this.fire();
+	    } else {
+	      dloc.hash = (s[0] === '/') ? s : '/' + s;
+	    }
+	    return this;
+	  },
+
+	  writeFrame: function (s) {
+	    // IE support...
+	    var f = document.getElementById('state-frame');
+	    var d = f.contentDocument || f.contentWindow.document;
+	    d.open();
+	    d.write("<script>_hash = '" + s + "'; onload = parent.listener.syncHash;<script>");
+	    d.close();
+	  },
+
+	  syncHash: function () {
+	    // IE support...
+	    var s = this._hash;
+	    if (s != dloc.hash) {
+	      dloc.hash = s;
+	    }
+	    return this;
+	  },
+
+	  onHashChanged: function () {}
+	};
+
+	var Router = exports.Router = function (routes) {
+	  if (!(this instanceof Router)) return new Router(routes);
+
+	  this.params   = {};
+	  this.routes   = {};
+	  this.methods  = ['on', 'once', 'after', 'before'];
+	  this.scope    = [];
+	  this._methods = {};
+
+	  this._insert = this.insert;
+	  this.insert = this.insertEx;
+
+	  this.historySupport = (window.history != null ? window.history.pushState : null) != null
+
+	  this.configure();
+	  this.mount(routes || {});
+	};
+
+	Router.prototype.init = function (r) {
+	  var self = this
+	    , routeTo;
+	  this.handler = function(onChangeEvent) {
+	    var newURL = onChangeEvent && onChangeEvent.newURL || window.location.hash;
+	    var url = self.history === true ? self.getPath() : newURL.replace(/.*#/, '');
+	    self.dispatch('on', url.charAt(0) === '/' ? url : '/' + url);
+	  };
+
+	  listener.init(this.handler, this.history);
+
+	  if (this.history === false) {
+	    if (dlocHashEmpty() && r) {
+	      dloc.hash = r;
+	    } else if (!dlocHashEmpty()) {
+	      self.dispatch('on', '/' + dloc.hash.replace(/^(#\/|#|\/)/, ''));
+	    }
+	  }
+	  else {
+	    if (this.convert_hash_in_init) {
+	      // Use hash as route
+	      routeTo = dlocHashEmpty() && r ? r : !dlocHashEmpty() ? dloc.hash.replace(/^#/, '') : null;
+	      if (routeTo) {
+	        window.history.replaceState({}, document.title, routeTo);
+	      }
+	    }
+	    else {
+	      // Use canonical url
+	      routeTo = this.getPath();
+	    }
+
+	    // Router has been initialized, but due to the chrome bug it will not
+	    // yet actually route HTML5 history state changes. Thus, decide if should route.
+	    if (routeTo || this.run_in_init === true) {
+	      this.handler();
+	    }
+	  }
+
+	  return this;
+	};
+
+	Router.prototype.explode = function () {
+	  var v = this.history === true ? this.getPath() : dloc.hash;
+	  if (v.charAt(1) === '/') { v=v.slice(1) }
+	  return v.slice(1, v.length).split("/");
+	};
+
+	Router.prototype.setRoute = function (i, v, val) {
+	  var url = this.explode();
+
+	  if (typeof i === 'number' && typeof v === 'string') {
+	    url[i] = v;
+	  }
+	  else if (typeof val === 'string') {
+	    url.splice(i, v, s);
+	  }
+	  else {
+	    url = [i];
+	  }
+
+	  listener.setHash(url.join('/'));
+	  return url;
+	};
+
+	//
+	// ### function insertEx(method, path, route, parent)
+	// #### @method {string} Method to insert the specific `route`.
+	// #### @path {Array} Parsed path to insert the `route` at.
+	// #### @route {Array|function} Route handlers to insert.
+	// #### @parent {Object} **Optional** Parent "routes" to insert into.
+	// insert a callback that will only occur once per the matched route.
+	//
+	Router.prototype.insertEx = function(method, path, route, parent) {
+	  if (method === "once") {
+	    method = "on";
+	    route = function(route) {
+	      var once = false;
+	      return function() {
+	        if (once) return;
+	        once = true;
+	        return route.apply(this, arguments);
+	      };
+	    }(route);
+	  }
+	  return this._insert(method, path, route, parent);
+	};
+
+	Router.prototype.getRoute = function (v) {
+	  var ret = v;
+
+	  if (typeof v === "number") {
+	    ret = this.explode()[v];
+	  }
+	  else if (typeof v === "string"){
+	    var h = this.explode();
+	    ret = h.indexOf(v);
+	  }
+	  else {
+	    ret = this.explode();
+	  }
+
+	  return ret;
+	};
+
+	Router.prototype.destroy = function () {
+	  listener.destroy(this.handler);
+	  return this;
+	};
+
+	Router.prototype.getPath = function () {
+	  var path = window.location.pathname;
+	  if (path.substr(0, 1) !== '/') {
+	    path = '/' + path;
+	  }
+	  return path;
+	};
+	function _every(arr, iterator) {
+	  for (var i = 0; i < arr.length; i += 1) {
+	    if (iterator(arr[i], i, arr) === false) {
+	      return;
+	    }
+	  }
+	}
+
+	function _flatten(arr) {
+	  var flat = [];
+	  for (var i = 0, n = arr.length; i < n; i++) {
+	    flat = flat.concat(arr[i]);
+	  }
+	  return flat;
+	}
+
+	function _asyncEverySeries(arr, iterator, callback) {
+	  if (!arr.length) {
+	    return callback();
+	  }
+	  var completed = 0;
+	  (function iterate() {
+	    iterator(arr[completed], function(err) {
+	      if (err || err === false) {
+	        callback(err);
+	        callback = function() {};
+	      } else {
+	        completed += 1;
+	        if (completed === arr.length) {
+	          callback();
+	        } else {
+	          iterate();
+	        }
+	      }
+	    });
+	  })();
+	}
+
+	function paramifyString(str, params, mod) {
+	  mod = str;
+	  for (var param in params) {
+	    if (params.hasOwnProperty(param)) {
+	      mod = params[param](str);
+	      if (mod !== str) {
+	        break;
+	      }
+	    }
+	  }
+	  return mod === str ? "([._a-zA-Z0-9-%()]+)" : mod;
+	}
+
+	function regifyString(str, params) {
+	  var matches, last = 0, out = "";
+	  while (matches = str.substr(last).match(/[^\w\d\- %@&]*\*[^\w\d\- %@&]*/)) {
+	    last = matches.index + matches[0].length;
+	    matches[0] = matches[0].replace(/^\*/, "([_.()!\\ %@&a-zA-Z0-9-]+)");
+	    out += str.substr(0, matches.index) + matches[0];
+	  }
+	  str = out += str.substr(last);
+	  var captures = str.match(/:([^\/]+)/ig), capture, length;
+	  if (captures) {
+	    length = captures.length;
+	    for (var i = 0; i < length; i++) {
+	      capture = captures[i];
+	      if (capture.slice(0, 2) === "::") {
+	        str = capture.slice(1);
+	      } else {
+	        str = str.replace(capture, paramifyString(capture, params));
+	      }
+	    }
+	  }
+	  return str;
+	}
+
+	function terminator(routes, delimiter, start, stop) {
+	  var last = 0, left = 0, right = 0, start = (start || "(").toString(), stop = (stop || ")").toString(), i;
+	  for (i = 0; i < routes.length; i++) {
+	    var chunk = routes[i];
+	    if (chunk.indexOf(start, last) > chunk.indexOf(stop, last) || ~chunk.indexOf(start, last) && !~chunk.indexOf(stop, last) || !~chunk.indexOf(start, last) && ~chunk.indexOf(stop, last)) {
+	      left = chunk.indexOf(start, last);
+	      right = chunk.indexOf(stop, last);
+	      if (~left && !~right || !~left && ~right) {
+	        var tmp = routes.slice(0, (i || 1) + 1).join(delimiter);
+	        routes = [ tmp ].concat(routes.slice((i || 1) + 1));
+	      }
+	      last = (right > left ? right : left) + 1;
+	      i = 0;
+	    } else {
+	      last = 0;
+	    }
+	  }
+	  return routes;
+	}
+
+	var QUERY_SEPARATOR = /\?.*/;
+
+	Router.prototype.configure = function(options) {
+	  options = options || {};
+	  for (var i = 0; i < this.methods.length; i++) {
+	    this._methods[this.methods[i]] = true;
+	  }
+	  this.recurse = options.recurse || this.recurse || false;
+	  this.async = options.async || false;
+	  this.delimiter = options.delimiter || "/";
+	  this.strict = typeof options.strict === "undefined" ? true : options.strict;
+	  this.notfound = options.notfound;
+	  this.resource = options.resource;
+	  this.history = options.html5history && this.historySupport || false;
+	  this.run_in_init = this.history === true && options.run_handler_in_init !== false;
+	  this.convert_hash_in_init = this.history === true && options.convert_hash_in_init !== false;
+	  this.every = {
+	    after: options.after || null,
+	    before: options.before || null,
+	    on: options.on || null
+	  };
+	  return this;
+	};
+
+	Router.prototype.param = function(token, matcher) {
+	  if (token[0] !== ":") {
+	    token = ":" + token;
+	  }
+	  var compiled = new RegExp(token, "g");
+	  this.params[token] = function(str) {
+	    return str.replace(compiled, matcher.source || matcher);
+	  };
+	  return this;
+	};
+
+	Router.prototype.on = Router.prototype.route = function(method, path, route) {
+	  var self = this;
+	  if (!route && typeof path == "function") {
+	    route = path;
+	    path = method;
+	    method = "on";
+	  }
+	  if (Array.isArray(path)) {
+	    return path.forEach(function(p) {
+	      self.on(method, p, route);
+	    });
+	  }
+	  if (path.source) {
+	    path = path.source.replace(/\\\//ig, "/");
+	  }
+	  if (Array.isArray(method)) {
+	    return method.forEach(function(m) {
+	      self.on(m.toLowerCase(), path, route);
+	    });
+	  }
+	  path = path.split(new RegExp(this.delimiter));
+	  path = terminator(path, this.delimiter);
+	  this.insert(method, this.scope.concat(path), route);
+	};
+
+	Router.prototype.path = function(path, routesFn) {
+	  var self = this, length = this.scope.length;
+	  if (path.source) {
+	    path = path.source.replace(/\\\//ig, "/");
+	  }
+	  path = path.split(new RegExp(this.delimiter));
+	  path = terminator(path, this.delimiter);
+	  this.scope = this.scope.concat(path);
+	  routesFn.call(this, this);
+	  this.scope.splice(length, path.length);
+	};
+
+	Router.prototype.dispatch = function(method, path, callback) {
+	  var self = this, fns = this.traverse(method, path.replace(QUERY_SEPARATOR, ""), this.routes, ""), invoked = this._invoked, after;
+	  this._invoked = true;
+	  if (!fns || fns.length === 0) {
+	    this.last = [];
+	    if (typeof this.notfound === "function") {
+	      this.invoke([ this.notfound ], {
+	        method: method,
+	        path: path
+	      }, callback);
+	    }
+	    return false;
+	  }
+	  if (this.recurse === "forward") {
+	    fns = fns.reverse();
+	  }
+	  function updateAndInvoke() {
+	    self.last = fns.after;
+	    self.invoke(self.runlist(fns), self, callback);
+	  }
+	  after = this.every && this.every.after ? [ this.every.after ].concat(this.last) : [ this.last ];
+	  if (after && after.length > 0 && invoked) {
+	    if (this.async) {
+	      this.invoke(after, this, updateAndInvoke);
+	    } else {
+	      this.invoke(after, this);
+	      updateAndInvoke();
+	    }
+	    return true;
+	  }
+	  updateAndInvoke();
+	  return true;
+	};
+
+	Router.prototype.invoke = function(fns, thisArg, callback) {
+	  var self = this;
+	  var apply;
+	  if (this.async) {
+	    apply = function(fn, next) {
+	      if (Array.isArray(fn)) {
+	        return _asyncEverySeries(fn, apply, next);
+	      } else if (typeof fn == "function") {
+	        fn.apply(thisArg, (fns.captures || []).concat(next));
+	      }
+	    };
+	    _asyncEverySeries(fns, apply, function() {
+	      if (callback) {
+	        callback.apply(thisArg, arguments);
+	      }
+	    });
+	  } else {
+	    apply = function(fn) {
+	      if (Array.isArray(fn)) {
+	        return _every(fn, apply);
+	      } else if (typeof fn === "function") {
+	        return fn.apply(thisArg, fns.captures || []);
+	      } else if (typeof fn === "string" && self.resource) {
+	        self.resource[fn].apply(thisArg, fns.captures || []);
+	      }
+	    };
+	    _every(fns, apply);
+	  }
+	};
+
+	Router.prototype.traverse = function(method, path, routes, regexp, filter) {
+	  var fns = [], current, exact, match, next, that;
+	  function filterRoutes(routes) {
+	    if (!filter) {
+	      return routes;
+	    }
+	    function deepCopy(source) {
+	      var result = [];
+	      for (var i = 0; i < source.length; i++) {
+	        result[i] = Array.isArray(source[i]) ? deepCopy(source[i]) : source[i];
+	      }
+	      return result;
+	    }
+	    function applyFilter(fns) {
+	      for (var i = fns.length - 1; i >= 0; i--) {
+	        if (Array.isArray(fns[i])) {
+	          applyFilter(fns[i]);
+	          if (fns[i].length === 0) {
+	            fns.splice(i, 1);
+	          }
+	        } else {
+	          if (!filter(fns[i])) {
+	            fns.splice(i, 1);
+	          }
+	        }
+	      }
+	    }
+	    var newRoutes = deepCopy(routes);
+	    newRoutes.matched = routes.matched;
+	    newRoutes.captures = routes.captures;
+	    newRoutes.after = routes.after.filter(filter);
+	    applyFilter(newRoutes);
+	    return newRoutes;
+	  }
+	  if (path === this.delimiter && routes[method]) {
+	    next = [ [ routes.before, routes[method] ].filter(Boolean) ];
+	    next.after = [ routes.after ].filter(Boolean);
+	    next.matched = true;
+	    next.captures = [];
+	    return filterRoutes(next);
+	  }
+	  for (var r in routes) {
+	    if (routes.hasOwnProperty(r) && (!this._methods[r] || this._methods[r] && typeof routes[r] === "object" && !Array.isArray(routes[r]))) {
+	      current = exact = regexp + this.delimiter + r;
+	      if (!this.strict) {
+	        exact += "[" + this.delimiter + "]?";
+	      }
+	      match = path.match(new RegExp("^" + exact));
+	      if (!match) {
+	        continue;
+	      }
+	      if (match[0] && match[0] == path && routes[r][method]) {
+	        next = [ [ routes[r].before, routes[r][method] ].filter(Boolean) ];
+	        next.after = [ routes[r].after ].filter(Boolean);
+	        next.matched = true;
+	        next.captures = match.slice(1);
+	        if (this.recurse && routes === this.routes) {
+	          next.push([ routes.before, routes.on ].filter(Boolean));
+	          next.after = next.after.concat([ routes.after ].filter(Boolean));
+	        }
+	        return filterRoutes(next);
+	      }
+	      next = this.traverse(method, path, routes[r], current);
+	      if (next.matched) {
+	        if (next.length > 0) {
+	          fns = fns.concat(next);
+	        }
+	        if (this.recurse) {
+	          fns.push([ routes[r].before, routes[r].on ].filter(Boolean));
+	          next.after = next.after.concat([ routes[r].after ].filter(Boolean));
+	          if (routes === this.routes) {
+	            fns.push([ routes["before"], routes["on"] ].filter(Boolean));
+	            next.after = next.after.concat([ routes["after"] ].filter(Boolean));
+	          }
+	        }
+	        fns.matched = true;
+	        fns.captures = next.captures;
+	        fns.after = next.after;
+	        return filterRoutes(fns);
+	      }
+	    }
+	  }
+	  return false;
+	};
+
+	Router.prototype.insert = function(method, path, route, parent) {
+	  var methodType, parentType, isArray, nested, part;
+	  path = path.filter(function(p) {
+	    return p && p.length > 0;
+	  });
+	  parent = parent || this.routes;
+	  part = path.shift();
+	  if (/\:|\*/.test(part) && !/\\d|\\w/.test(part)) {
+	    part = regifyString(part, this.params);
+	  }
+	  if (path.length > 0) {
+	    parent[part] = parent[part] || {};
+	    return this.insert(method, path, route, parent[part]);
+	  }
+	  if (!part && !path.length && parent === this.routes) {
+	    methodType = typeof parent[method];
+	    switch (methodType) {
+	     case "function":
+	      parent[method] = [ parent[method], route ];
+	      return;
+	     case "object":
+	      parent[method].push(route);
+	      return;
+	     case "undefined":
+	      parent[method] = route;
+	      return;
+	    }
+	    return;
+	  }
+	  parentType = typeof parent[part];
+	  isArray = Array.isArray(parent[part]);
+	  if (parent[part] && !isArray && parentType == "object") {
+	    methodType = typeof parent[part][method];
+	    switch (methodType) {
+	     case "function":
+	      parent[part][method] = [ parent[part][method], route ];
+	      return;
+	     case "object":
+	      parent[part][method].push(route);
+	      return;
+	     case "undefined":
+	      parent[part][method] = route;
+	      return;
+	    }
+	  } else if (parentType == "undefined") {
+	    nested = {};
+	    nested[method] = route;
+	    parent[part] = nested;
+	    return;
+	  }
+	  throw new Error("Invalid route context: " + parentType);
+	};
+
+
+
+	Router.prototype.extend = function(methods) {
+	  var self = this, len = methods.length, i;
+	  function extend(method) {
+	    self._methods[method] = true;
+	    self[method] = function() {
+	      var extra = arguments.length === 1 ? [ method, "" ] : [ method ];
+	      self.on.apply(self, extra.concat(Array.prototype.slice.call(arguments)));
+	    };
+	  }
+	  for (i = 0; i < len; i++) {
+	    extend(methods[i]);
+	  }
+	};
+
+	Router.prototype.runlist = function(fns) {
+	  var runlist = this.every && this.every.before ? [ this.every.before ].concat(_flatten(fns)) : _flatten(fns);
+	  if (this.every && this.every.on) {
+	    runlist.push(this.every.on);
+	  }
+	  runlist.captures = fns.captures;
+	  runlist.source = fns.source;
+	  return runlist;
+	};
+
+	Router.prototype.mount = function(routes, path) {
+	  if (!routes || typeof routes !== "object" || Array.isArray(routes)) {
+	    return;
+	  }
+	  var self = this;
+	  path = path || [];
+	  if (!Array.isArray(path)) {
+	    path = path.split(self.delimiter);
+	  }
+	  function insertOrMount(route, local) {
+	    var rename = route, parts = route.split(self.delimiter), routeType = typeof routes[route], isRoute = parts[0] === "" || !self._methods[parts[0]], event = isRoute ? "on" : rename;
+	    if (isRoute) {
+	      rename = rename.slice((rename.match(new RegExp("^" + self.delimiter)) || [ "" ])[0].length);
+	      parts.shift();
+	    }
+	    if (isRoute && routeType === "object" && !Array.isArray(routes[route])) {
+	      local = local.concat(parts);
+	      self.mount(routes[route], local);
+	      return;
+	    }
+	    if (isRoute) {
+	      local = local.concat(rename.split(self.delimiter));
+	      local = terminator(local, self.delimiter);
+	    }
+	    self.insert(event, local, routes[route]);
+	  }
+	  for (var route in routes) {
+	    if (routes.hasOwnProperty(route)) {
+	      insertOrMount(route, path.slice(0));
+	    }
+	  }
+	};
+
+
+
+	}( true ? exports : window));
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// Libraries
-	var storage = __webpack_require__(14)
-	  , project_name = __webpack_require__(16).name
+	var storage = __webpack_require__(16)
+	  , project_name = __webpack_require__(18).name
 
 
 
@@ -1500,7 +2222,7 @@
 
 
 /***/ },
-/* 14 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var require;/* WEBPACK VAR INJECTION */(function(global, process) {/*!
@@ -4284,10 +5006,10 @@
 	/******/ ])
 	});
 	;
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(15)))
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(17)))
 
 /***/ },
-/* 15 */
+/* 17 */
 /***/ function(module, exports) {
 
 	// shim for using process in browser
@@ -4384,7 +5106,7 @@
 
 
 /***/ },
-/* 16 */
+/* 18 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -4420,883 +5142,180 @@
 	};
 
 /***/ },
-/* 17 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
-	
+	var throttle = __webpack_require__(10)
+	  , hljs = __webpack_require__(20)
+	  , marked = __webpack_require__(159)
+	  , d = __webpack_require__(160)
 
-	//
-	// Generated on Tue Dec 16 2014 12:13:47 GMT+0100 (CET) by Charlie Robbins, Paolo Fragomeni & the Contributors (Using Codesurgeon).
-	// Version 1.2.6
-	//
 
-	(function (exports) {
-
-	/*
-	 * browser.js: Browser specific functionality for director.
-	 *
-	 * (C) 2011, Charlie Robbins, Paolo Fragomeni, & the Contributors.
-	 * MIT LICENSE
-	 *
-	 */
-
-	var dloc = document.location;
-
-	function dlocHashEmpty() {
-	  // Non-IE browsers return '' when the address bar shows '#'; Director's logic
-	  // assumes both mean empty.
-	  return dloc.hash === '' || dloc.hash === '#';
+	function render(md) {
+	  md || (md = d.ed.val())
+	  d.md.html(marked(md))
+	  highlight()
 	}
 
-	var listener = {
-	  mode: 'modern',
-	  hash: dloc.hash,
-	  history: false,
-
-	  check: function () {
-	    var h = dloc.hash;
-	    if (h != this.hash) {
-	      this.hash = h;
-	      this.onHashChanged();
-	    }
-	  },
-
-	  fire: function () {
-	    if (this.mode === 'modern') {
-	      this.history === true ? window.onpopstate() : window.onhashchange();
-	    }
-	    else {
-	      this.onHashChanged();
-	    }
-	  },
-
-	  init: function (fn, history) {
-	    var self = this;
-	    this.history = history;
-
-	    if (!Router.listeners) {
-	      Router.listeners = [];
-	    }
-
-	    function onchange(onChangeEvent) {
-	      for (var i = 0, l = Router.listeners.length; i < l; i++) {
-	        Router.listeners[i](onChangeEvent);
-	      }
-	    }
-
-	    //note IE8 is being counted as 'modern' because it has the hashchange event
-	    if ('onhashchange' in window && (document.documentMode === undefined
-	      || document.documentMode > 7)) {
-	      // At least for now HTML5 history is available for 'modern' browsers only
-	      if (this.history === true) {
-	        // There is an old bug in Chrome that causes onpopstate to fire even
-	        // upon initial page load. Since the handler is run manually in init(),
-	        // this would cause Chrome to run it twise. Currently the only
-	        // workaround seems to be to set the handler after the initial page load
-	        // http://code.google.com/p/chromium/issues/detail?id=63040
-	        setTimeout(function() {
-	          window.onpopstate = onchange;
-	        }, 500);
-	      }
-	      else {
-	        window.onhashchange = onchange;
-	      }
-	      this.mode = 'modern';
-	    }
-	    else {
-	      //
-	      // IE support, based on a concept by Erik Arvidson ...
-	      //
-	      var frame = document.createElement('iframe');
-	      frame.id = 'state-frame';
-	      frame.style.display = 'none';
-	      document.body.appendChild(frame);
-	      this.writeFrame('');
-
-	      if ('onpropertychange' in document && 'attachEvent' in document) {
-	        document.attachEvent('onpropertychange', function () {
-	          if (event.propertyName === 'location') {
-	            self.check();
-	          }
-	        });
-	      }
-
-	      window.setInterval(function () { self.check(); }, 50);
-
-	      this.onHashChanged = onchange;
-	      this.mode = 'legacy';
-	    }
-
-	    Router.listeners.push(fn);
-
-	    return this.mode;
-	  },
-
-	  destroy: function (fn) {
-	    if (!Router || !Router.listeners) {
-	      return;
-	    }
-
-	    var listeners = Router.listeners;
-
-	    for (var i = listeners.length - 1; i >= 0; i--) {
-	      if (listeners[i] === fn) {
-	        listeners.splice(i, 1);
-	      }
-	    }
-	  },
-
-	  setHash: function (s) {
-	    // Mozilla always adds an entry to the history
-	    if (this.mode === 'legacy') {
-	      this.writeFrame(s);
-	    }
-
-	    if (this.history === true) {
-	      window.history.pushState({}, document.title, s);
-	      // Fire an onpopstate event manually since pushing does not obviously
-	      // trigger the pop event.
-	      this.fire();
-	    } else {
-	      dloc.hash = (s[0] === '/') ? s : '/' + s;
-	    }
-	    return this;
-	  },
-
-	  writeFrame: function (s) {
-	    // IE support...
-	    var f = document.getElementById('state-frame');
-	    var d = f.contentDocument || f.contentWindow.document;
-	    d.open();
-	    d.write("<script>_hash = '" + s + "'; onload = parent.listener.syncHash;<script>");
-	    d.close();
-	  },
-
-	  syncHash: function () {
-	    // IE support...
-	    var s = this._hash;
-	    if (s != dloc.hash) {
-	      dloc.hash = s;
-	    }
-	    return this;
-	  },
-
-	  onHashChanged: function () {}
-	};
-
-	var Router = exports.Router = function (routes) {
-	  if (!(this instanceof Router)) return new Router(routes);
-
-	  this.params   = {};
-	  this.routes   = {};
-	  this.methods  = ['on', 'once', 'after', 'before'];
-	  this.scope    = [];
-	  this._methods = {};
-
-	  this._insert = this.insert;
-	  this.insert = this.insertEx;
-
-	  this.historySupport = (window.history != null ? window.history.pushState : null) != null
-
-	  this.configure();
-	  this.mount(routes || {});
-	};
-
-	Router.prototype.init = function (r) {
-	  var self = this
-	    , routeTo;
-	  this.handler = function(onChangeEvent) {
-	    var newURL = onChangeEvent && onChangeEvent.newURL || window.location.hash;
-	    var url = self.history === true ? self.getPath() : newURL.replace(/.*#/, '');
-	    self.dispatch('on', url.charAt(0) === '/' ? url : '/' + url);
-	  };
-
-	  listener.init(this.handler, this.history);
-
-	  if (this.history === false) {
-	    if (dlocHashEmpty() && r) {
-	      dloc.hash = r;
-	    } else if (!dlocHashEmpty()) {
-	      self.dispatch('on', '/' + dloc.hash.replace(/^(#\/|#|\/)/, ''));
-	    }
-	  }
-	  else {
-	    if (this.convert_hash_in_init) {
-	      // Use hash as route
-	      routeTo = dlocHashEmpty() && r ? r : !dlocHashEmpty() ? dloc.hash.replace(/^#/, '') : null;
-	      if (routeTo) {
-	        window.history.replaceState({}, document.title, routeTo);
-	      }
-	    }
-	    else {
-	      // Use canonical url
-	      routeTo = this.getPath();
-	    }
-
-	    // Router has been initialized, but due to the chrome bug it will not
-	    // yet actually route HTML5 history state changes. Thus, decide if should route.
-	    if (routeTo || this.run_in_init === true) {
-	      this.handler();
-	    }
-	  }
-
-	  return this;
-	};
-
-	Router.prototype.explode = function () {
-	  var v = this.history === true ? this.getPath() : dloc.hash;
-	  if (v.charAt(1) === '/') { v=v.slice(1) }
-	  return v.slice(1, v.length).split("/");
-	};
-
-	Router.prototype.setRoute = function (i, v, val) {
-	  var url = this.explode();
-
-	  if (typeof i === 'number' && typeof v === 'string') {
-	    url[i] = v;
-	  }
-	  else if (typeof val === 'string') {
-	    url.splice(i, v, s);
-	  }
-	  else {
-	    url = [i];
-	  }
-
-	  listener.setHash(url.join('/'));
-	  return url;
-	};
-
-	//
-	// ### function insertEx(method, path, route, parent)
-	// #### @method {string} Method to insert the specific `route`.
-	// #### @path {Array} Parsed path to insert the `route` at.
-	// #### @route {Array|function} Route handlers to insert.
-	// #### @parent {Object} **Optional** Parent "routes" to insert into.
-	// insert a callback that will only occur once per the matched route.
-	//
-	Router.prototype.insertEx = function(method, path, route, parent) {
-	  if (method === "once") {
-	    method = "on";
-	    route = function(route) {
-	      var once = false;
-	      return function() {
-	        if (once) return;
-	        once = true;
-	        return route.apply(this, arguments);
-	      };
-	    }(route);
-	  }
-	  return this._insert(method, path, route, parent);
-	};
-
-	Router.prototype.getRoute = function (v) {
-	  var ret = v;
-
-	  if (typeof v === "number") {
-	    ret = this.explode()[v];
-	  }
-	  else if (typeof v === "string"){
-	    var h = this.explode();
-	    ret = h.indexOf(v);
-	  }
-	  else {
-	    ret = this.explode();
-	  }
-
-	  return ret;
-	};
-
-	Router.prototype.destroy = function () {
-	  listener.destroy(this.handler);
-	  return this;
-	};
-
-	Router.prototype.getPath = function () {
-	  var path = window.location.pathname;
-	  if (path.substr(0, 1) !== '/') {
-	    path = '/' + path;
-	  }
-	  return path;
-	};
-	function _every(arr, iterator) {
-	  for (var i = 0; i < arr.length; i += 1) {
-	    if (iterator(arr[i], i, arr) === false) {
-	      return;
-	    }
-	  }
-	}
-
-	function _flatten(arr) {
-	  var flat = [];
-	  for (var i = 0, n = arr.length; i < n; i++) {
-	    flat = flat.concat(arr[i]);
-	  }
-	  return flat;
-	}
-
-	function _asyncEverySeries(arr, iterator, callback) {
-	  if (!arr.length) {
-	    return callback();
-	  }
-	  var completed = 0;
-	  (function iterate() {
-	    iterator(arr[completed], function(err) {
-	      if (err || err === false) {
-	        callback(err);
-	        callback = function() {};
-	      } else {
-	        completed += 1;
-	        if (completed === arr.length) {
-	          callback();
-	        } else {
-	          iterate();
-	        }
-	      }
-	    });
-	  })();
-	}
-
-	function paramifyString(str, params, mod) {
-	  mod = str;
-	  for (var param in params) {
-	    if (params.hasOwnProperty(param)) {
-	      mod = params[param](str);
-	      if (mod !== str) {
-	        break;
-	      }
-	    }
-	  }
-	  return mod === str ? "([._a-zA-Z0-9-%()]+)" : mod;
-	}
-
-	function regifyString(str, params) {
-	  var matches, last = 0, out = "";
-	  while (matches = str.substr(last).match(/[^\w\d\- %@&]*\*[^\w\d\- %@&]*/)) {
-	    last = matches.index + matches[0].length;
-	    matches[0] = matches[0].replace(/^\*/, "([_.()!\\ %@&a-zA-Z0-9-]+)");
-	    out += str.substr(0, matches.index) + matches[0];
-	  }
-	  str = out += str.substr(last);
-	  var captures = str.match(/:([^\/]+)/ig), capture, length;
-	  if (captures) {
-	    length = captures.length;
-	    for (var i = 0; i < length; i++) {
-	      capture = captures[i];
-	      if (capture.slice(0, 2) === "::") {
-	        str = capture.slice(1);
-	      } else {
-	        str = str.replace(capture, paramifyString(capture, params));
-	      }
-	    }
-	  }
-	  return str;
-	}
-
-	function terminator(routes, delimiter, start, stop) {
-	  var last = 0, left = 0, right = 0, start = (start || "(").toString(), stop = (stop || ")").toString(), i;
-	  for (i = 0; i < routes.length; i++) {
-	    var chunk = routes[i];
-	    if (chunk.indexOf(start, last) > chunk.indexOf(stop, last) || ~chunk.indexOf(start, last) && !~chunk.indexOf(stop, last) || !~chunk.indexOf(start, last) && ~chunk.indexOf(stop, last)) {
-	      left = chunk.indexOf(start, last);
-	      right = chunk.indexOf(stop, last);
-	      if (~left && !~right || !~left && ~right) {
-	        var tmp = routes.slice(0, (i || 1) + 1).join(delimiter);
-	        routes = [ tmp ].concat(routes.slice((i || 1) + 1));
-	      }
-	      last = (right > left ? right : left) + 1;
-	      i = 0;
-	    } else {
-	      last = 0;
-	    }
-	  }
-	  return routes;
-	}
-
-	var QUERY_SEPARATOR = /\?.*/;
-
-	Router.prototype.configure = function(options) {
-	  options = options || {};
-	  for (var i = 0; i < this.methods.length; i++) {
-	    this._methods[this.methods[i]] = true;
-	  }
-	  this.recurse = options.recurse || this.recurse || false;
-	  this.async = options.async || false;
-	  this.delimiter = options.delimiter || "/";
-	  this.strict = typeof options.strict === "undefined" ? true : options.strict;
-	  this.notfound = options.notfound;
-	  this.resource = options.resource;
-	  this.history = options.html5history && this.historySupport || false;
-	  this.run_in_init = this.history === true && options.run_handler_in_init !== false;
-	  this.convert_hash_in_init = this.history === true && options.convert_hash_in_init !== false;
-	  this.every = {
-	    after: options.after || null,
-	    before: options.before || null,
-	    on: options.on || null
-	  };
-	  return this;
-	};
-
-	Router.prototype.param = function(token, matcher) {
-	  if (token[0] !== ":") {
-	    token = ":" + token;
-	  }
-	  var compiled = new RegExp(token, "g");
-	  this.params[token] = function(str) {
-	    return str.replace(compiled, matcher.source || matcher);
-	  };
-	  return this;
-	};
-
-	Router.prototype.on = Router.prototype.route = function(method, path, route) {
-	  var self = this;
-	  if (!route && typeof path == "function") {
-	    route = path;
-	    path = method;
-	    method = "on";
-	  }
-	  if (Array.isArray(path)) {
-	    return path.forEach(function(p) {
-	      self.on(method, p, route);
-	    });
-	  }
-	  if (path.source) {
-	    path = path.source.replace(/\\\//ig, "/");
-	  }
-	  if (Array.isArray(method)) {
-	    return method.forEach(function(m) {
-	      self.on(m.toLowerCase(), path, route);
-	    });
-	  }
-	  path = path.split(new RegExp(this.delimiter));
-	  path = terminator(path, this.delimiter);
-	  this.insert(method, this.scope.concat(path), route);
-	};
-
-	Router.prototype.path = function(path, routesFn) {
-	  var self = this, length = this.scope.length;
-	  if (path.source) {
-	    path = path.source.replace(/\\\//ig, "/");
-	  }
-	  path = path.split(new RegExp(this.delimiter));
-	  path = terminator(path, this.delimiter);
-	  this.scope = this.scope.concat(path);
-	  routesFn.call(this, this);
-	  this.scope.splice(length, path.length);
-	};
-
-	Router.prototype.dispatch = function(method, path, callback) {
-	  var self = this, fns = this.traverse(method, path.replace(QUERY_SEPARATOR, ""), this.routes, ""), invoked = this._invoked, after;
-	  this._invoked = true;
-	  if (!fns || fns.length === 0) {
-	    this.last = [];
-	    if (typeof this.notfound === "function") {
-	      this.invoke([ this.notfound ], {
-	        method: method,
-	        path: path
-	      }, callback);
-	    }
-	    return false;
-	  }
-	  if (this.recurse === "forward") {
-	    fns = fns.reverse();
-	  }
-	  function updateAndInvoke() {
-	    self.last = fns.after;
-	    self.invoke(self.runlist(fns), self, callback);
-	  }
-	  after = this.every && this.every.after ? [ this.every.after ].concat(this.last) : [ this.last ];
-	  if (after && after.length > 0 && invoked) {
-	    if (this.async) {
-	      this.invoke(after, this, updateAndInvoke);
-	    } else {
-	      this.invoke(after, this);
-	      updateAndInvoke();
-	    }
-	    return true;
-	  }
-	  updateAndInvoke();
-	  return true;
-	};
-
-	Router.prototype.invoke = function(fns, thisArg, callback) {
-	  var self = this;
-	  var apply;
-	  if (this.async) {
-	    apply = function(fn, next) {
-	      if (Array.isArray(fn)) {
-	        return _asyncEverySeries(fn, apply, next);
-	      } else if (typeof fn == "function") {
-	        fn.apply(thisArg, (fns.captures || []).concat(next));
-	      }
-	    };
-	    _asyncEverySeries(fns, apply, function() {
-	      if (callback) {
-	        callback.apply(thisArg, arguments);
-	      }
-	    });
-	  } else {
-	    apply = function(fn) {
-	      if (Array.isArray(fn)) {
-	        return _every(fn, apply);
-	      } else if (typeof fn === "function") {
-	        return fn.apply(thisArg, fns.captures || []);
-	      } else if (typeof fn === "string" && self.resource) {
-	        self.resource[fn].apply(thisArg, fns.captures || []);
-	      }
-	    };
-	    _every(fns, apply);
-	  }
-	};
-
-	Router.prototype.traverse = function(method, path, routes, regexp, filter) {
-	  var fns = [], current, exact, match, next, that;
-	  function filterRoutes(routes) {
-	    if (!filter) {
-	      return routes;
-	    }
-	    function deepCopy(source) {
-	      var result = [];
-	      for (var i = 0; i < source.length; i++) {
-	        result[i] = Array.isArray(source[i]) ? deepCopy(source[i]) : source[i];
-	      }
-	      return result;
-	    }
-	    function applyFilter(fns) {
-	      for (var i = fns.length - 1; i >= 0; i--) {
-	        if (Array.isArray(fns[i])) {
-	          applyFilter(fns[i]);
-	          if (fns[i].length === 0) {
-	            fns.splice(i, 1);
-	          }
-	        } else {
-	          if (!filter(fns[i])) {
-	            fns.splice(i, 1);
-	          }
-	        }
-	      }
-	    }
-	    var newRoutes = deepCopy(routes);
-	    newRoutes.matched = routes.matched;
-	    newRoutes.captures = routes.captures;
-	    newRoutes.after = routes.after.filter(filter);
-	    applyFilter(newRoutes);
-	    return newRoutes;
-	  }
-	  if (path === this.delimiter && routes[method]) {
-	    next = [ [ routes.before, routes[method] ].filter(Boolean) ];
-	    next.after = [ routes.after ].filter(Boolean);
-	    next.matched = true;
-	    next.captures = [];
-	    return filterRoutes(next);
-	  }
-	  for (var r in routes) {
-	    if (routes.hasOwnProperty(r) && (!this._methods[r] || this._methods[r] && typeof routes[r] === "object" && !Array.isArray(routes[r]))) {
-	      current = exact = regexp + this.delimiter + r;
-	      if (!this.strict) {
-	        exact += "[" + this.delimiter + "]?";
-	      }
-	      match = path.match(new RegExp("^" + exact));
-	      if (!match) {
-	        continue;
-	      }
-	      if (match[0] && match[0] == path && routes[r][method]) {
-	        next = [ [ routes[r].before, routes[r][method] ].filter(Boolean) ];
-	        next.after = [ routes[r].after ].filter(Boolean);
-	        next.matched = true;
-	        next.captures = match.slice(1);
-	        if (this.recurse && routes === this.routes) {
-	          next.push([ routes.before, routes.on ].filter(Boolean));
-	          next.after = next.after.concat([ routes.after ].filter(Boolean));
-	        }
-	        return filterRoutes(next);
-	      }
-	      next = this.traverse(method, path, routes[r], current);
-	      if (next.matched) {
-	        if (next.length > 0) {
-	          fns = fns.concat(next);
-	        }
-	        if (this.recurse) {
-	          fns.push([ routes[r].before, routes[r].on ].filter(Boolean));
-	          next.after = next.after.concat([ routes[r].after ].filter(Boolean));
-	          if (routes === this.routes) {
-	            fns.push([ routes["before"], routes["on"] ].filter(Boolean));
-	            next.after = next.after.concat([ routes["after"] ].filter(Boolean));
-	          }
-	        }
-	        fns.matched = true;
-	        fns.captures = next.captures;
-	        fns.after = next.after;
-	        return filterRoutes(fns);
-	      }
-	    }
-	  }
-	  return false;
-	};
-
-	Router.prototype.insert = function(method, path, route, parent) {
-	  var methodType, parentType, isArray, nested, part;
-	  path = path.filter(function(p) {
-	    return p && p.length > 0;
-	  });
-	  parent = parent || this.routes;
-	  part = path.shift();
-	  if (/\:|\*/.test(part) && !/\\d|\\w/.test(part)) {
-	    part = regifyString(part, this.params);
-	  }
-	  if (path.length > 0) {
-	    parent[part] = parent[part] || {};
-	    return this.insert(method, path, route, parent[part]);
-	  }
-	  if (!part && !path.length && parent === this.routes) {
-	    methodType = typeof parent[method];
-	    switch (methodType) {
-	     case "function":
-	      parent[method] = [ parent[method], route ];
-	      return;
-	     case "object":
-	      parent[method].push(route);
-	      return;
-	     case "undefined":
-	      parent[method] = route;
-	      return;
-	    }
-	    return;
-	  }
-	  parentType = typeof parent[part];
-	  isArray = Array.isArray(parent[part]);
-	  if (parent[part] && !isArray && parentType == "object") {
-	    methodType = typeof parent[part][method];
-	    switch (methodType) {
-	     case "function":
-	      parent[part][method] = [ parent[part][method], route ];
-	      return;
-	     case "object":
-	      parent[part][method].push(route);
-	      return;
-	     case "undefined":
-	      parent[part][method] = route;
-	      return;
-	    }
-	  } else if (parentType == "undefined") {
-	    nested = {};
-	    nested[method] = route;
-	    parent[part] = nested;
-	    return;
-	  }
-	  throw new Error("Invalid route context: " + parentType);
-	};
+	var highlight = throttle(function() {
+	  d.preview.find('pre code').each(function(i, block) {
+	    hljs.highlightBlock(block)
+	  })
+	}, 2000)
 
 
-
-	Router.prototype.extend = function(methods) {
-	  var self = this, len = methods.length, i;
-	  function extend(method) {
-	    self._methods[method] = true;
-	    self[method] = function() {
-	      var extra = arguments.length === 1 ? [ method, "" ] : [ method ];
-	      self.on.apply(self, extra.concat(Array.prototype.slice.call(arguments)));
-	    };
-	  }
-	  for (i = 0; i < len; i++) {
-	    extend(methods[i]);
-	  }
-	};
-
-	Router.prototype.runlist = function(fns) {
-	  var runlist = this.every && this.every.before ? [ this.every.before ].concat(_flatten(fns)) : _flatten(fns);
-	  if (this.every && this.every.on) {
-	    runlist.push(this.every.on);
-	  }
-	  runlist.captures = fns.captures;
-	  runlist.source = fns.source;
-	  return runlist;
-	};
-
-	Router.prototype.mount = function(routes, path) {
-	  if (!routes || typeof routes !== "object" || Array.isArray(routes)) {
-	    return;
-	  }
-	  var self = this;
-	  path = path || [];
-	  if (!Array.isArray(path)) {
-	    path = path.split(self.delimiter);
-	  }
-	  function insertOrMount(route, local) {
-	    var rename = route, parts = route.split(self.delimiter), routeType = typeof routes[route], isRoute = parts[0] === "" || !self._methods[parts[0]], event = isRoute ? "on" : rename;
-	    if (isRoute) {
-	      rename = rename.slice((rename.match(new RegExp("^" + self.delimiter)) || [ "" ])[0].length);
-	      parts.shift();
-	    }
-	    if (isRoute && routeType === "object" && !Array.isArray(routes[route])) {
-	      local = local.concat(parts);
-	      self.mount(routes[route], local);
-	      return;
-	    }
-	    if (isRoute) {
-	      local = local.concat(rename.split(self.delimiter));
-	      local = terminator(local, self.delimiter);
-	    }
-	    self.insert(event, local, routes[route]);
-	  }
-	  for (var route in routes) {
-	    if (routes.hasOwnProperty(route)) {
-	      insertOrMount(route, path.slice(0));
-	    }
-	  }
-	};
+	module.exports = render
 
 
-
-	}( true ? exports : window));
 
 /***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var hljs = __webpack_require__(19);
+	var hljs = __webpack_require__(21);
 
-	hljs.registerLanguage('1c', __webpack_require__(20));
-	hljs.registerLanguage('accesslog', __webpack_require__(21));
-	hljs.registerLanguage('actionscript', __webpack_require__(22));
-	hljs.registerLanguage('apache', __webpack_require__(23));
-	hljs.registerLanguage('applescript', __webpack_require__(24));
-	hljs.registerLanguage('armasm', __webpack_require__(25));
-	hljs.registerLanguage('xml', __webpack_require__(26));
-	hljs.registerLanguage('asciidoc', __webpack_require__(27));
-	hljs.registerLanguage('aspectj', __webpack_require__(28));
-	hljs.registerLanguage('autohotkey', __webpack_require__(29));
-	hljs.registerLanguage('autoit', __webpack_require__(30));
-	hljs.registerLanguage('avrasm', __webpack_require__(31));
-	hljs.registerLanguage('axapta', __webpack_require__(32));
-	hljs.registerLanguage('bash', __webpack_require__(33));
-	hljs.registerLanguage('brainfuck', __webpack_require__(34));
-	hljs.registerLanguage('cal', __webpack_require__(35));
-	hljs.registerLanguage('capnproto', __webpack_require__(36));
-	hljs.registerLanguage('ceylon', __webpack_require__(37));
-	hljs.registerLanguage('clojure', __webpack_require__(38));
-	hljs.registerLanguage('clojure-repl', __webpack_require__(39));
-	hljs.registerLanguage('cmake', __webpack_require__(40));
-	hljs.registerLanguage('coffeescript', __webpack_require__(41));
-	hljs.registerLanguage('cpp', __webpack_require__(42));
-	hljs.registerLanguage('crmsh', __webpack_require__(43));
-	hljs.registerLanguage('crystal', __webpack_require__(44));
-	hljs.registerLanguage('cs', __webpack_require__(45));
-	hljs.registerLanguage('css', __webpack_require__(46));
-	hljs.registerLanguage('d', __webpack_require__(47));
-	hljs.registerLanguage('markdown', __webpack_require__(48));
-	hljs.registerLanguage('dart', __webpack_require__(49));
-	hljs.registerLanguage('delphi', __webpack_require__(50));
-	hljs.registerLanguage('diff', __webpack_require__(51));
-	hljs.registerLanguage('django', __webpack_require__(52));
-	hljs.registerLanguage('dns', __webpack_require__(53));
-	hljs.registerLanguage('dockerfile', __webpack_require__(54));
-	hljs.registerLanguage('dos', __webpack_require__(55));
-	hljs.registerLanguage('dust', __webpack_require__(56));
-	hljs.registerLanguage('elixir', __webpack_require__(57));
-	hljs.registerLanguage('elm', __webpack_require__(58));
-	hljs.registerLanguage('ruby', __webpack_require__(59));
-	hljs.registerLanguage('erb', __webpack_require__(60));
-	hljs.registerLanguage('erlang-repl', __webpack_require__(61));
-	hljs.registerLanguage('erlang', __webpack_require__(62));
-	hljs.registerLanguage('fix', __webpack_require__(63));
-	hljs.registerLanguage('fortran', __webpack_require__(64));
-	hljs.registerLanguage('fsharp', __webpack_require__(65));
-	hljs.registerLanguage('gams', __webpack_require__(66));
-	hljs.registerLanguage('gcode', __webpack_require__(67));
-	hljs.registerLanguage('gherkin', __webpack_require__(68));
-	hljs.registerLanguage('glsl', __webpack_require__(69));
-	hljs.registerLanguage('go', __webpack_require__(70));
-	hljs.registerLanguage('golo', __webpack_require__(71));
-	hljs.registerLanguage('gradle', __webpack_require__(72));
-	hljs.registerLanguage('groovy', __webpack_require__(73));
-	hljs.registerLanguage('haml', __webpack_require__(74));
-	hljs.registerLanguage('handlebars', __webpack_require__(75));
-	hljs.registerLanguage('haskell', __webpack_require__(76));
-	hljs.registerLanguage('haxe', __webpack_require__(77));
-	hljs.registerLanguage('http', __webpack_require__(78));
-	hljs.registerLanguage('inform7', __webpack_require__(79));
-	hljs.registerLanguage('ini', __webpack_require__(80));
-	hljs.registerLanguage('irpf90', __webpack_require__(81));
-	hljs.registerLanguage('java', __webpack_require__(82));
-	hljs.registerLanguage('javascript', __webpack_require__(83));
-	hljs.registerLanguage('json', __webpack_require__(84));
-	hljs.registerLanguage('julia', __webpack_require__(85));
-	hljs.registerLanguage('kotlin', __webpack_require__(86));
-	hljs.registerLanguage('lasso', __webpack_require__(87));
-	hljs.registerLanguage('less', __webpack_require__(88));
-	hljs.registerLanguage('lisp', __webpack_require__(89));
-	hljs.registerLanguage('livecodeserver', __webpack_require__(90));
-	hljs.registerLanguage('livescript', __webpack_require__(91));
-	hljs.registerLanguage('lua', __webpack_require__(92));
-	hljs.registerLanguage('makefile', __webpack_require__(93));
-	hljs.registerLanguage('mathematica', __webpack_require__(94));
-	hljs.registerLanguage('matlab', __webpack_require__(95));
-	hljs.registerLanguage('mel', __webpack_require__(96));
-	hljs.registerLanguage('mercury', __webpack_require__(97));
-	hljs.registerLanguage('mizar', __webpack_require__(98));
-	hljs.registerLanguage('perl', __webpack_require__(99));
-	hljs.registerLanguage('mojolicious', __webpack_require__(100));
-	hljs.registerLanguage('monkey', __webpack_require__(101));
-	hljs.registerLanguage('nginx', __webpack_require__(102));
-	hljs.registerLanguage('nimrod', __webpack_require__(103));
-	hljs.registerLanguage('nix', __webpack_require__(104));
-	hljs.registerLanguage('nsis', __webpack_require__(105));
-	hljs.registerLanguage('objectivec', __webpack_require__(106));
-	hljs.registerLanguage('ocaml', __webpack_require__(107));
-	hljs.registerLanguage('openscad', __webpack_require__(108));
-	hljs.registerLanguage('oxygene', __webpack_require__(109));
-	hljs.registerLanguage('parser3', __webpack_require__(110));
-	hljs.registerLanguage('pf', __webpack_require__(111));
-	hljs.registerLanguage('php', __webpack_require__(112));
-	hljs.registerLanguage('powershell', __webpack_require__(113));
-	hljs.registerLanguage('processing', __webpack_require__(114));
-	hljs.registerLanguage('profile', __webpack_require__(115));
-	hljs.registerLanguage('prolog', __webpack_require__(116));
-	hljs.registerLanguage('protobuf', __webpack_require__(117));
-	hljs.registerLanguage('puppet', __webpack_require__(118));
-	hljs.registerLanguage('python', __webpack_require__(119));
-	hljs.registerLanguage('q', __webpack_require__(120));
-	hljs.registerLanguage('r', __webpack_require__(121));
-	hljs.registerLanguage('rib', __webpack_require__(122));
-	hljs.registerLanguage('roboconf', __webpack_require__(123));
-	hljs.registerLanguage('rsl', __webpack_require__(124));
-	hljs.registerLanguage('ruleslanguage', __webpack_require__(125));
-	hljs.registerLanguage('rust', __webpack_require__(126));
-	hljs.registerLanguage('scala', __webpack_require__(127));
-	hljs.registerLanguage('scheme', __webpack_require__(128));
-	hljs.registerLanguage('scilab', __webpack_require__(129));
-	hljs.registerLanguage('scss', __webpack_require__(130));
-	hljs.registerLanguage('smali', __webpack_require__(131));
-	hljs.registerLanguage('smalltalk', __webpack_require__(132));
-	hljs.registerLanguage('sml', __webpack_require__(133));
-	hljs.registerLanguage('sqf', __webpack_require__(134));
-	hljs.registerLanguage('sql', __webpack_require__(135));
-	hljs.registerLanguage('stata', __webpack_require__(136));
-	hljs.registerLanguage('step21', __webpack_require__(137));
-	hljs.registerLanguage('stylus', __webpack_require__(138));
-	hljs.registerLanguage('swift', __webpack_require__(139));
-	hljs.registerLanguage('tcl', __webpack_require__(140));
-	hljs.registerLanguage('tex', __webpack_require__(141));
-	hljs.registerLanguage('thrift', __webpack_require__(142));
-	hljs.registerLanguage('tp', __webpack_require__(143));
-	hljs.registerLanguage('twig', __webpack_require__(144));
-	hljs.registerLanguage('typescript', __webpack_require__(145));
-	hljs.registerLanguage('vala', __webpack_require__(146));
-	hljs.registerLanguage('vbnet', __webpack_require__(147));
-	hljs.registerLanguage('vbscript', __webpack_require__(148));
-	hljs.registerLanguage('vbscript-html', __webpack_require__(149));
-	hljs.registerLanguage('verilog', __webpack_require__(150));
-	hljs.registerLanguage('vhdl', __webpack_require__(151));
-	hljs.registerLanguage('vim', __webpack_require__(152));
-	hljs.registerLanguage('x86asm', __webpack_require__(153));
-	hljs.registerLanguage('xl', __webpack_require__(154));
-	hljs.registerLanguage('xquery', __webpack_require__(155));
-	hljs.registerLanguage('zephir', __webpack_require__(156));
+	hljs.registerLanguage('1c', __webpack_require__(22));
+	hljs.registerLanguage('accesslog', __webpack_require__(23));
+	hljs.registerLanguage('actionscript', __webpack_require__(24));
+	hljs.registerLanguage('apache', __webpack_require__(25));
+	hljs.registerLanguage('applescript', __webpack_require__(26));
+	hljs.registerLanguage('armasm', __webpack_require__(27));
+	hljs.registerLanguage('xml', __webpack_require__(28));
+	hljs.registerLanguage('asciidoc', __webpack_require__(29));
+	hljs.registerLanguage('aspectj', __webpack_require__(30));
+	hljs.registerLanguage('autohotkey', __webpack_require__(31));
+	hljs.registerLanguage('autoit', __webpack_require__(32));
+	hljs.registerLanguage('avrasm', __webpack_require__(33));
+	hljs.registerLanguage('axapta', __webpack_require__(34));
+	hljs.registerLanguage('bash', __webpack_require__(35));
+	hljs.registerLanguage('brainfuck', __webpack_require__(36));
+	hljs.registerLanguage('cal', __webpack_require__(37));
+	hljs.registerLanguage('capnproto', __webpack_require__(38));
+	hljs.registerLanguage('ceylon', __webpack_require__(39));
+	hljs.registerLanguage('clojure', __webpack_require__(40));
+	hljs.registerLanguage('clojure-repl', __webpack_require__(41));
+	hljs.registerLanguage('cmake', __webpack_require__(42));
+	hljs.registerLanguage('coffeescript', __webpack_require__(43));
+	hljs.registerLanguage('cpp', __webpack_require__(44));
+	hljs.registerLanguage('crmsh', __webpack_require__(45));
+	hljs.registerLanguage('crystal', __webpack_require__(46));
+	hljs.registerLanguage('cs', __webpack_require__(47));
+	hljs.registerLanguage('css', __webpack_require__(48));
+	hljs.registerLanguage('d', __webpack_require__(49));
+	hljs.registerLanguage('markdown', __webpack_require__(50));
+	hljs.registerLanguage('dart', __webpack_require__(51));
+	hljs.registerLanguage('delphi', __webpack_require__(52));
+	hljs.registerLanguage('diff', __webpack_require__(53));
+	hljs.registerLanguage('django', __webpack_require__(54));
+	hljs.registerLanguage('dns', __webpack_require__(55));
+	hljs.registerLanguage('dockerfile', __webpack_require__(56));
+	hljs.registerLanguage('dos', __webpack_require__(57));
+	hljs.registerLanguage('dust', __webpack_require__(58));
+	hljs.registerLanguage('elixir', __webpack_require__(59));
+	hljs.registerLanguage('elm', __webpack_require__(60));
+	hljs.registerLanguage('ruby', __webpack_require__(61));
+	hljs.registerLanguage('erb', __webpack_require__(62));
+	hljs.registerLanguage('erlang-repl', __webpack_require__(63));
+	hljs.registerLanguage('erlang', __webpack_require__(64));
+	hljs.registerLanguage('fix', __webpack_require__(65));
+	hljs.registerLanguage('fortran', __webpack_require__(66));
+	hljs.registerLanguage('fsharp', __webpack_require__(67));
+	hljs.registerLanguage('gams', __webpack_require__(68));
+	hljs.registerLanguage('gcode', __webpack_require__(69));
+	hljs.registerLanguage('gherkin', __webpack_require__(70));
+	hljs.registerLanguage('glsl', __webpack_require__(71));
+	hljs.registerLanguage('go', __webpack_require__(72));
+	hljs.registerLanguage('golo', __webpack_require__(73));
+	hljs.registerLanguage('gradle', __webpack_require__(74));
+	hljs.registerLanguage('groovy', __webpack_require__(75));
+	hljs.registerLanguage('haml', __webpack_require__(76));
+	hljs.registerLanguage('handlebars', __webpack_require__(77));
+	hljs.registerLanguage('haskell', __webpack_require__(78));
+	hljs.registerLanguage('haxe', __webpack_require__(79));
+	hljs.registerLanguage('http', __webpack_require__(80));
+	hljs.registerLanguage('inform7', __webpack_require__(81));
+	hljs.registerLanguage('ini', __webpack_require__(82));
+	hljs.registerLanguage('irpf90', __webpack_require__(83));
+	hljs.registerLanguage('java', __webpack_require__(84));
+	hljs.registerLanguage('javascript', __webpack_require__(85));
+	hljs.registerLanguage('json', __webpack_require__(86));
+	hljs.registerLanguage('julia', __webpack_require__(87));
+	hljs.registerLanguage('kotlin', __webpack_require__(88));
+	hljs.registerLanguage('lasso', __webpack_require__(89));
+	hljs.registerLanguage('less', __webpack_require__(90));
+	hljs.registerLanguage('lisp', __webpack_require__(91));
+	hljs.registerLanguage('livecodeserver', __webpack_require__(92));
+	hljs.registerLanguage('livescript', __webpack_require__(93));
+	hljs.registerLanguage('lua', __webpack_require__(94));
+	hljs.registerLanguage('makefile', __webpack_require__(95));
+	hljs.registerLanguage('mathematica', __webpack_require__(96));
+	hljs.registerLanguage('matlab', __webpack_require__(97));
+	hljs.registerLanguage('mel', __webpack_require__(98));
+	hljs.registerLanguage('mercury', __webpack_require__(99));
+	hljs.registerLanguage('mizar', __webpack_require__(100));
+	hljs.registerLanguage('perl', __webpack_require__(101));
+	hljs.registerLanguage('mojolicious', __webpack_require__(102));
+	hljs.registerLanguage('monkey', __webpack_require__(103));
+	hljs.registerLanguage('nginx', __webpack_require__(104));
+	hljs.registerLanguage('nimrod', __webpack_require__(105));
+	hljs.registerLanguage('nix', __webpack_require__(106));
+	hljs.registerLanguage('nsis', __webpack_require__(107));
+	hljs.registerLanguage('objectivec', __webpack_require__(108));
+	hljs.registerLanguage('ocaml', __webpack_require__(109));
+	hljs.registerLanguage('openscad', __webpack_require__(110));
+	hljs.registerLanguage('oxygene', __webpack_require__(111));
+	hljs.registerLanguage('parser3', __webpack_require__(112));
+	hljs.registerLanguage('pf', __webpack_require__(113));
+	hljs.registerLanguage('php', __webpack_require__(114));
+	hljs.registerLanguage('powershell', __webpack_require__(115));
+	hljs.registerLanguage('processing', __webpack_require__(116));
+	hljs.registerLanguage('profile', __webpack_require__(117));
+	hljs.registerLanguage('prolog', __webpack_require__(118));
+	hljs.registerLanguage('protobuf', __webpack_require__(119));
+	hljs.registerLanguage('puppet', __webpack_require__(120));
+	hljs.registerLanguage('python', __webpack_require__(121));
+	hljs.registerLanguage('q', __webpack_require__(122));
+	hljs.registerLanguage('r', __webpack_require__(123));
+	hljs.registerLanguage('rib', __webpack_require__(124));
+	hljs.registerLanguage('roboconf', __webpack_require__(125));
+	hljs.registerLanguage('rsl', __webpack_require__(126));
+	hljs.registerLanguage('ruleslanguage', __webpack_require__(127));
+	hljs.registerLanguage('rust', __webpack_require__(128));
+	hljs.registerLanguage('scala', __webpack_require__(129));
+	hljs.registerLanguage('scheme', __webpack_require__(130));
+	hljs.registerLanguage('scilab', __webpack_require__(131));
+	hljs.registerLanguage('scss', __webpack_require__(132));
+	hljs.registerLanguage('smali', __webpack_require__(133));
+	hljs.registerLanguage('smalltalk', __webpack_require__(134));
+	hljs.registerLanguage('sml', __webpack_require__(135));
+	hljs.registerLanguage('sqf', __webpack_require__(136));
+	hljs.registerLanguage('sql', __webpack_require__(137));
+	hljs.registerLanguage('stata', __webpack_require__(138));
+	hljs.registerLanguage('step21', __webpack_require__(139));
+	hljs.registerLanguage('stylus', __webpack_require__(140));
+	hljs.registerLanguage('swift', __webpack_require__(141));
+	hljs.registerLanguage('tcl', __webpack_require__(142));
+	hljs.registerLanguage('tex', __webpack_require__(143));
+	hljs.registerLanguage('thrift', __webpack_require__(144));
+	hljs.registerLanguage('tp', __webpack_require__(145));
+	hljs.registerLanguage('twig', __webpack_require__(146));
+	hljs.registerLanguage('typescript', __webpack_require__(147));
+	hljs.registerLanguage('vala', __webpack_require__(148));
+	hljs.registerLanguage('vbnet', __webpack_require__(149));
+	hljs.registerLanguage('vbscript', __webpack_require__(150));
+	hljs.registerLanguage('vbscript-html', __webpack_require__(151));
+	hljs.registerLanguage('verilog', __webpack_require__(152));
+	hljs.registerLanguage('vhdl', __webpack_require__(153));
+	hljs.registerLanguage('vim', __webpack_require__(154));
+	hljs.registerLanguage('x86asm', __webpack_require__(155));
+	hljs.registerLanguage('xl', __webpack_require__(156));
+	hljs.registerLanguage('xquery', __webpack_require__(157));
+	hljs.registerLanguage('zephir', __webpack_require__(158));
 
 	module.exports = hljs;
 
 /***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -6073,7 +6092,7 @@
 
 
 /***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs){
@@ -6163,7 +6182,7 @@
 	};
 
 /***/ },
-/* 21 */
+/* 23 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6205,7 +6224,7 @@
 	};
 
 /***/ },
-/* 22 */
+/* 24 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6284,7 +6303,7 @@
 	};
 
 /***/ },
-/* 23 */
+/* 25 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6334,7 +6353,7 @@
 	};
 
 /***/ },
-/* 24 */
+/* 26 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6435,7 +6454,7 @@
 	};
 
 /***/ },
-/* 25 */
+/* 27 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6531,7 +6550,7 @@
 	};
 
 /***/ },
-/* 26 */
+/* 28 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6638,7 +6657,7 @@
 	};
 
 /***/ },
-/* 27 */
+/* 29 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -6834,7 +6853,7 @@
 	};
 
 /***/ },
-/* 28 */
+/* 30 */
 /***/ function(module, exports) {
 
 	module.exports = function (hljs) {
@@ -6976,7 +6995,7 @@
 	};
 
 /***/ },
-/* 29 */
+/* 31 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -7042,7 +7061,7 @@
 	};
 
 /***/ },
-/* 30 */
+/* 32 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8801,7 +8820,7 @@
 	};
 
 /***/ },
-/* 31 */
+/* 33 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8867,7 +8886,7 @@
 	};
 
 /***/ },
-/* 32 */
+/* 34 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8902,7 +8921,7 @@
 	};
 
 /***/ },
-/* 33 */
+/* 35 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -8982,7 +9001,7 @@
 	};
 
 /***/ },
-/* 34 */
+/* 36 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs){
@@ -9023,7 +9042,7 @@
 	};
 
 /***/ },
-/* 35 */
+/* 37 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9107,7 +9126,7 @@
 	};
 
 /***/ },
-/* 36 */
+/* 38 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9160,7 +9179,7 @@
 	};
 
 /***/ },
-/* 37 */
+/* 39 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9232,7 +9251,7 @@
 	};
 
 /***/ },
-/* 38 */
+/* 40 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9333,7 +9352,7 @@
 	};
 
 /***/ },
-/* 39 */
+/* 41 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9352,7 +9371,7 @@
 	};
 
 /***/ },
-/* 40 */
+/* 42 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9395,7 +9414,7 @@
 	};
 
 /***/ },
-/* 41 */
+/* 43 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9540,7 +9559,7 @@
 	};
 
 /***/ },
-/* 42 */
+/* 44 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9685,7 +9704,7 @@
 	};
 
 /***/ },
-/* 43 */
+/* 45 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9787,7 +9806,7 @@
 	};
 
 /***/ },
-/* 44 */
+/* 46 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -9983,7 +10002,7 @@
 	};
 
 /***/ },
-/* 45 */
+/* 47 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10106,7 +10125,7 @@
 	};
 
 /***/ },
-/* 46 */
+/* 48 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10212,7 +10231,7 @@
 	};
 
 /***/ },
-/* 47 */
+/* 49 */
 /***/ function(module, exports) {
 
 	module.exports = /**
@@ -10474,7 +10493,7 @@
 	};
 
 /***/ },
-/* 48 */
+/* 50 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10580,7 +10599,7 @@
 	};
 
 /***/ },
-/* 49 */
+/* 51 */
 /***/ function(module, exports) {
 
 	module.exports = function (hljs) {
@@ -10685,7 +10704,7 @@
 	};
 
 /***/ },
-/* 50 */
+/* 52 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10756,7 +10775,7 @@
 	};
 
 /***/ },
-/* 51 */
+/* 53 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10800,7 +10819,7 @@
 	};
 
 /***/ },
-/* 52 */
+/* 54 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10854,7 +10873,7 @@
 	};
 
 /***/ },
-/* 53 */
+/* 55 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10886,7 +10905,7 @@
 	};
 
 /***/ },
-/* 54 */
+/* 56 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10925,7 +10944,7 @@
 	};
 
 /***/ },
-/* 55 */
+/* 57 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -10978,7 +10997,7 @@
 	};
 
 /***/ },
-/* 56 */
+/* 58 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11017,7 +11036,7 @@
 	};
 
 /***/ },
-/* 57 */
+/* 59 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11123,7 +11142,7 @@
 	};
 
 /***/ },
-/* 58 */
+/* 60 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11213,7 +11232,7 @@
 	};
 
 /***/ },
-/* 59 */
+/* 61 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11387,7 +11406,7 @@
 	};
 
 /***/ },
-/* 60 */
+/* 62 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11406,7 +11425,7 @@
 	};
 
 /***/ },
-/* 61 */
+/* 63 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11458,7 +11477,7 @@
 	};
 
 /***/ },
-/* 62 */
+/* 64 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11614,7 +11633,7 @@
 	};
 
 /***/ },
-/* 63 */
+/* 65 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11647,7 +11666,7 @@
 	};
 
 /***/ },
-/* 64 */
+/* 66 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11722,7 +11741,7 @@
 	};
 
 /***/ },
-/* 65 */
+/* 67 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11785,7 +11804,7 @@
 	};
 
 /***/ },
-/* 66 */
+/* 68 */
 /***/ function(module, exports) {
 
 	module.exports = function (hljs) {
@@ -11826,7 +11845,7 @@
 	};
 
 /***/ },
-/* 67 */
+/* 69 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -11903,7 +11922,7 @@
 	};
 
 /***/ },
-/* 68 */
+/* 70 */
 /***/ function(module, exports) {
 
 	module.exports = function (hljs) {
@@ -11940,7 +11959,7 @@
 	};
 
 /***/ },
-/* 69 */
+/* 71 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12038,7 +12057,7 @@
 	};
 
 /***/ },
-/* 70 */
+/* 72 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12081,7 +12100,7 @@
 	};
 
 /***/ },
-/* 71 */
+/* 73 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12109,7 +12128,7 @@
 	};
 
 /***/ },
-/* 72 */
+/* 74 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12148,7 +12167,7 @@
 	};
 
 /***/ },
-/* 73 */
+/* 75 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12240,7 +12259,7 @@
 	};
 
 /***/ },
-/* 74 */
+/* 76 */
 /***/ function(module, exports) {
 
 	module.exports = // TODO support filter tags like :javascript, support inline HTML
@@ -12352,7 +12371,7 @@
 	};
 
 /***/ },
-/* 75 */
+/* 77 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12389,7 +12408,7 @@
 	};
 
 /***/ },
-/* 76 */
+/* 78 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12517,7 +12536,7 @@
 	};
 
 /***/ },
-/* 77 */
+/* 79 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12582,7 +12601,7 @@
 	};
 
 /***/ },
-/* 78 */
+/* 80 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12621,7 +12640,7 @@
 	};
 
 /***/ },
-/* 79 */
+/* 81 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12683,7 +12702,7 @@
 	};
 
 /***/ },
-/* 80 */
+/* 82 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12747,7 +12766,7 @@
 	};
 
 /***/ },
-/* 81 */
+/* 83 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12827,7 +12846,7 @@
 	};
 
 /***/ },
-/* 82 */
+/* 84 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -12931,7 +12950,7 @@
 	};
 
 /***/ },
-/* 83 */
+/* 85 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13047,7 +13066,7 @@
 	};
 
 /***/ },
-/* 84 */
+/* 86 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13089,7 +13108,7 @@
 	};
 
 /***/ },
-/* 85 */
+/* 87 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13254,7 +13273,7 @@
 	};
 
 /***/ },
-/* 86 */
+/* 88 */
 /***/ function(module, exports) {
 
 	module.exports = function (hljs) {
@@ -13359,7 +13378,7 @@
 	};
 
 /***/ },
-/* 87 */
+/* 89 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13549,7 +13568,7 @@
 	};
 
 /***/ },
-/* 88 */
+/* 90 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13690,7 +13709,7 @@
 	};
 
 /***/ },
-/* 89 */
+/* 91 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13801,7 +13820,7 @@
 	};
 
 /***/ },
-/* 90 */
+/* 92 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -13963,7 +13982,7 @@
 	};
 
 /***/ },
-/* 91 */
+/* 93 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14118,7 +14137,7 @@
 	};
 
 /***/ },
-/* 92 */
+/* 94 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14178,7 +14197,7 @@
 	};
 
 /***/ },
-/* 93 */
+/* 95 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14228,7 +14247,7 @@
 	};
 
 /***/ },
-/* 94 */
+/* 96 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14291,7 +14310,7 @@
 	};
 
 /***/ },
-/* 95 */
+/* 97 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14386,7 +14405,7 @@
 	};
 
 /***/ },
-/* 96 */
+/* 98 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14620,7 +14639,7 @@
 	};
 
 /***/ },
-/* 97 */
+/* 99 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14713,7 +14732,7 @@
 	};
 
 /***/ },
-/* 98 */
+/* 100 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14736,7 +14755,7 @@
 	};
 
 /***/ },
-/* 99 */
+/* 101 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14897,7 +14916,7 @@
 	};
 
 /***/ },
-/* 100 */
+/* 102 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -14926,7 +14945,7 @@
 	};
 
 /***/ },
-/* 101 */
+/* 103 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15009,7 +15028,7 @@
 	};
 
 /***/ },
-/* 102 */
+/* 104 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15095,7 +15114,7 @@
 	};
 
 /***/ },
-/* 103 */
+/* 105 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15151,7 +15170,7 @@
 	};
 
 /***/ },
-/* 104 */
+/* 106 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15206,7 +15225,7 @@
 	};
 
 /***/ },
-/* 105 */
+/* 107 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15298,7 +15317,7 @@
 	};
 
 /***/ },
-/* 106 */
+/* 108 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15381,7 +15400,7 @@
 	};
 
 /***/ },
-/* 107 */
+/* 109 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15456,7 +15475,7 @@
 	};
 
 /***/ },
-/* 108 */
+/* 110 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15518,7 +15537,7 @@
 	};
 
 /***/ },
-/* 109 */
+/* 111 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15591,7 +15610,7 @@
 	};
 
 /***/ },
-/* 110 */
+/* 112 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15643,7 +15662,7 @@
 	};
 
 /***/ },
-/* 111 */
+/* 113 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15699,7 +15718,7 @@
 	};
 
 /***/ },
-/* 112 */
+/* 114 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15828,7 +15847,7 @@
 	};
 
 /***/ },
-/* 113 */
+/* 115 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15880,7 +15899,7 @@
 	};
 
 /***/ },
-/* 114 */
+/* 116 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15932,7 +15951,7 @@
 	};
 
 /***/ },
-/* 115 */
+/* 117 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -15978,7 +15997,7 @@
 	};
 
 /***/ },
-/* 116 */
+/* 118 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16071,7 +16090,7 @@
 	};
 
 /***/ },
-/* 117 */
+/* 119 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16112,7 +16131,7 @@
 	};
 
 /***/ },
-/* 118 */
+/* 120 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16224,7 +16243,7 @@
 	};
 
 /***/ },
-/* 119 */
+/* 121 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16313,7 +16332,7 @@
 	};
 
 /***/ },
-/* 120 */
+/* 122 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16340,7 +16359,7 @@
 	};
 
 /***/ },
-/* 121 */
+/* 123 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16414,7 +16433,7 @@
 	};
 
 /***/ },
-/* 122 */
+/* 124 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16445,7 +16464,7 @@
 	};
 
 /***/ },
-/* 123 */
+/* 125 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16509,7 +16528,7 @@
 	};
 
 /***/ },
-/* 124 */
+/* 126 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16550,7 +16569,7 @@
 	};
 
 /***/ },
-/* 125 */
+/* 127 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16615,7 +16634,7 @@
 	};
 
 /***/ },
-/* 126 */
+/* 128 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16705,7 +16724,7 @@
 	};
 
 /***/ },
-/* 127 */
+/* 129 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16772,7 +16791,7 @@
 	};
 
 /***/ },
-/* 128 */
+/* 130 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16898,7 +16917,7 @@
 	};
 
 /***/ },
-/* 129 */
+/* 131 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -16957,7 +16976,7 @@
 	};
 
 /***/ },
-/* 130 */
+/* 132 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -17078,7 +17097,7 @@
 	};
 
 /***/ },
-/* 131 */
+/* 133 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -17165,7 +17184,7 @@
 	};
 
 /***/ },
-/* 132 */
+/* 134 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -17222,7 +17241,7 @@
 	};
 
 /***/ },
-/* 133 */
+/* 135 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -17291,7 +17310,7 @@
 	};
 
 /***/ },
-/* 134 */
+/* 136 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -17391,7 +17410,7 @@
 	};
 
 /***/ },
-/* 135 */
+/* 137 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -17555,7 +17574,7 @@
 	};
 
 /***/ },
-/* 136 */
+/* 138 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -17597,7 +17616,7 @@
 	};
 
 /***/ },
-/* 137 */
+/* 139 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -17653,7 +17672,7 @@
 	};
 
 /***/ },
-/* 138 */
+/* 140 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18100,7 +18119,7 @@
 	};
 
 /***/ },
-/* 139 */
+/* 141 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18224,7 +18243,7 @@
 	};
 
 /***/ },
-/* 140 */
+/* 142 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18290,7 +18309,7 @@
 	};
 
 /***/ },
-/* 141 */
+/* 143 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18349,7 +18368,7 @@
 	};
 
 /***/ },
-/* 142 */
+/* 144 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18388,7 +18407,7 @@
 	};
 
 /***/ },
-/* 143 */
+/* 145 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18476,7 +18495,7 @@
 	};
 
 /***/ },
-/* 144 */
+/* 146 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18537,7 +18556,7 @@
 	};
 
 /***/ },
-/* 145 */
+/* 147 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18639,7 +18658,7 @@
 	};
 
 /***/ },
-/* 146 */
+/* 148 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18698,7 +18717,7 @@
 	};
 
 /***/ },
-/* 147 */
+/* 149 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18758,7 +18777,7 @@
 	};
 
 /***/ },
-/* 148 */
+/* 150 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18801,7 +18820,7 @@
 	};
 
 /***/ },
-/* 149 */
+/* 151 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18817,7 +18836,7 @@
 	};
 
 /***/ },
-/* 150 */
+/* 152 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18871,7 +18890,7 @@
 	};
 
 /***/ },
-/* 151 */
+/* 153 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18931,7 +18950,7 @@
 	};
 
 /***/ },
-/* 152 */
+/* 154 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -18998,7 +19017,7 @@
 	};
 
 /***/ },
-/* 153 */
+/* 155 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -19138,7 +19157,7 @@
 	};
 
 /***/ },
-/* 154 */
+/* 156 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -19229,7 +19248,7 @@
 	};
 
 /***/ },
-/* 155 */
+/* 157 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -19306,7 +19325,7 @@
 	};
 
 /***/ },
-/* 156 */
+/* 158 */
 /***/ function(module, exports) {
 
 	module.exports = function(hljs) {
@@ -19417,1683 +19436,7 @@
 	};
 
 /***/ },
-/* 157 */
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.2.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-
-	/** Used as the `TypeError` message for "Functions" methods. */
-	var FUNC_ERROR_TEXT = 'Expected a function';
-
-	/**
-	 * Creates a `_.flow` or `_.flowRight` function.
-	 *
-	 * @private
-	 * @param {boolean} [fromRight] Specify iterating from right to left.
-	 * @returns {Function} Returns the new flow function.
-	 */
-	function createFlow(fromRight) {
-	  return function() {
-	    var length = arguments.length,
-	        index = fromRight ? length : -1,
-	        leftIndex = 0,
-	        funcs = Array(length);
-
-	    while ((fromRight ? index-- : ++index < length)) {
-	      var func = funcs[leftIndex++] = arguments[index];
-	      if (typeof func != 'function') {
-	        throw new TypeError(FUNC_ERROR_TEXT);
-	      }
-	    }
-	    return function() {
-	      var index = 0,
-	          result = length ? funcs[index].apply(this, arguments) : arguments[0];
-
-	      while (++index < length) {
-	        result = funcs[index].call(this, result);
-	      }
-	      return result;
-	    };
-	  };
-	}
-
-	/**
-	 * Creates a function that returns the result of invoking the provided
-	 * functions with the `this` binding of the created function, where each
-	 * successive invocation is supplied the return value of the previous.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Function
-	 * @param {...Function} [funcs] Functions to invoke.
-	 * @returns {Function} Returns the new function.
-	 * @example
-	 *
-	 * function square(n) {
-	 *   return n * n;
-	 * }
-	 *
-	 * var addSquare = _.flow(_.add, square);
-	 * addSquare(1, 2);
-	 * // => 9
-	 */
-	var flow = createFlow();
-
-	module.exports = flow;
-
-
-/***/ },
-/* 158 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var storage = __webpack_require__(13)
-
-	function init($ed, $preview) {
-
-	  window.md = {
-	    sync_scroll: function(b) { 
-	      if (b===undefined) { return cfg_load('sync-scroll') }
-	      storage.config('sync-scroll', b)
-	      cfg.sync_scroll = b
-	    }
-
-	    ,css: function($elem, name, css, _val) {
-	      if (css === undefined) { return storage.config(name + '-css', clog) }
-
-	      if (_val) {
-	        var key = css
-	        css = {}
-	        css[key] = _val
-	      }
-
-	      storage.config(name + '-css', css)
-	      $elem.css(css)
-	    }
-
-	    ,reset_config: function(k) {
-	      if (k) {
-	        if (k instanceof Array) 
-	          k.forEach(md.reset_config);
-	        else 
-	          storage.config(k, null);
-	      } else {
-	        if (confirm("Erase all saved config?")) {
-	          window.md.reset_config([
-	            'sync-scroll', 
-	            'editor-css', 
-	            'preview-css',
-	            'rs-position'
-	          ])
-
-	          location.reload()
-	        } else {
-	          console.log('Configuration left unchanged.')
-	        }
-	      }
-	    }
-
-	    ,rm: function(filename) {
-	      if (!filename) return;
-
-	      if (! (filename instanceof Array))
-	        filename = [filename];
-
-	      if (confirm("About to remove files:\n\n-----\n\n" + filename.join("\n") + '\n\n-----\n\nReally do it?')) {
-	        filename.forEach(function(f) {
-	          storage.files.store.removeItem(f)
-	        })
-	      }
-	    }
-
-	    ,list_files: function() {
-	      storage.files.store.keys(function(e, ks) {
-	        if (e) throw e;
-	        console.log(ks)
-	      })
-	    }
-
-	    ,storage: storage
-	  }
-
-	  window.md.css.editor = window.md.css.bind(null, $ed, 'editor')
-	  window.md.css.preview = window.md.css.bind(null, $preview, 'preview')
-
-	  print_help()
-
-	}
-
-	function print_help() {
-	  var _ = function(x,s){ console.log('%c'+x, s||'')}
-	    , cmdcss = 'font-family:monospace;padding:4px;display:inline-block;background:#f2f2f2;font-weight:bold;'
-
-	  console.group("%cKeyboard Shortcuts:", 'font-weight:bold;font-size:1.125em;')
-	  _("<" + (is_mac() ? "cmd" : "ctrl") + "-s> :: Save/name file")
-	  _("<ctrl-p> :: Find saved file")
-	  _("<ctrl-=> :: Toggle scroll syncing")
-	  console.groupEnd()
-	  _("")
-
-	  console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
-	  _('md.rm( "filename" )              ||  md.rm(["f1", "f2", ...])')
-	  _('md.css.editor( "prop", "val" )   ||  md.css.editor( {prop:val, ...} )')
-	  _('md.css.preview( "prop", "val" )  ||  md.css.preview({prop:val, ...})')
-	  _('md.css( $elem, "storage-key", {prop:val, ...} )')
-	  _('md.sync_scroll( sync? )')
-	  _('md.reset_config()')
-	  console.groupEnd()
-	  _("")
-	  
-	  if (! is_mac()) {
-	    $('.windosx').text('ctrl')
-	  }
-	}
-
-	function clog() {
-	  console.log.apply(console, arguments)
-	}
-
-	function is_mac() {
-	  return ['Mac68K', 'MacPPC', 'MacIntel'].indexOf(navigator.platform)
-	}
-
-
-	module.exports = {init: init}
-
-
-
-/***/ },
 /* 159 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var storage = __webpack_require__(13)
-	  , search = __webpack_require__(160)
-	  , key = __webpack_require__(168)
-	  , cfg = __webpack_require__(169)
-	  , d = __webpack_require__(170)
-
-	function init() {
-	  // always listen for key shortcuts
-	  key.filter = function(){ return true }
-
-
-	  // Document handling
-
-	  key('command+s, ctrl+s', function() {
-	    if (!CURRENT_FILE || (CURRENT_FILE == cfg.default_filename)) {
-	      // save as a named file
-	      var file_name = prompt('Name this file:')
-	      if (file_name) {
-	        CURRENT_FILE = file_name
-	        save_file(function(){ router.setRoute('/'+file_name) })
-	        storage.files(cfg.default_filename, '')
-	      }
-	    } else {
-	      // placebo
-	      var delay = 210
-	        , old = document.title
-
-	      document.title = '✔ Saved'
-	      setTimeout(function(){ document.title = '✔ ' },       delay)
-	      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 2)
-	      setTimeout(function(){ document.title = '✔ ' },       delay * 3)
-	      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 4)
-	      setTimeout(function(){ document.title = old},         delay * 9)
-	    }
-
-	    return false
-	  })
-
-	  key('ctrl+p', function() {
-	    storage.files.store.keys(function(e, ks) {
-	      if (e) throw e;
-
-	      key.setScope('file-list')
-	      d.flist_frame.show()
-
-	      populate_file_list(ks)
-
-	      d.flist_search.focus()
-	    })
-
-	    return false
-	  })
-
-
-	  // Configuration
-
-	  key('ctrl+=', function() {
-	    storage.config('sync-scroll', function(current) {
-	      cfg.sync_scroll = !current
-	      storage.config('sync-scroll', !current)
-	    })
-	  })
-
-	  key('escape', 'file-list', function() {
-	    d.flist_frame.hide()
-	    key.setScope(null)
-	    return false
-	  })
-
-
-	  search.init()
-	  listen_for_search()
-
-	}
-
-
-	function listen_for_search() {
-	  d.flist_search.on('input', function() {
-	    var q = d.flist_search.val()
-	    populate_file_list(search.search(q))
-	  })
-	}
-
-	function populate_file_list(ks) {
-	  d.flist.empty()
-	  ks.forEach(function(k) {
-	    d.flist.append('<li><a href="#/'+k+'">'+k+'</li>')
-	  })
-	}
-
-	module.exports = {
-	  init: init
-	}
-
-
-
-/***/ },
-/* 160 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var fuzzy = __webpack_require__(161)
-	  , storage = __webpack_require__(13)
-	  , at = __webpack_require__(162)
-
-	var f, filenames
-
-	function init() {
-	  reload()
-	}
-
-	function reload() {
-	  storage.files.store.keys(function(e, ks) {
-	    if (e) throw e;
-	    filenames = ks
-	  })
-	}
-
-	function search(pattern) {
-	  if (pattern == "")
-	    return filenames;
-
-	  var matches = fuzzy.filter(pattern, filenames).map(function(res) {
-	    return res.original
-	  })
-
-	  return matches
-	}
-
-
-	module.exports = {
-	  init: init,
-	  reload: reload,
-	  search: search
-	}
-
-
-
-/***/ },
-/* 161 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*
-	 * Fuzzy
-	 * https://github.com/myork/fuzzy
-	 *
-	 * Copyright (c) 2012 Matt York
-	 * Licensed under the MIT license.
-	 */
-
-	(function() {
-
-	var root = this;
-
-	var fuzzy = {};
-
-	// Use in node or in browser
-	if (true) {
-	  module.exports = fuzzy;
-	} else {
-	  root.fuzzy = fuzzy;
-	}
-
-	// Return all elements of `array` that have a fuzzy
-	// match against `pattern`.
-	fuzzy.simpleFilter = function(pattern, array) {
-	  return array.filter(function(string) {
-	    return fuzzy.test(pattern, string);
-	  });
-	};
-
-	// Does `pattern` fuzzy match `string`?
-	fuzzy.test = function(pattern, string) {
-	  return fuzzy.match(pattern, string) !== null;
-	};
-
-	// If `pattern` matches `string`, wrap each matching character
-	// in `opts.pre` and `opts.post`. If no match, return null
-	fuzzy.match = function(pattern, string, opts) {
-	  opts = opts || {};
-	  var patternIdx = 0
-	    , result = []
-	    , len = string.length
-	    , totalScore = 0
-	    , currScore = 0
-	    // prefix
-	    , pre = opts.pre || ''
-	    // suffix
-	    , post = opts.post || ''
-	    // String to compare against. This might be a lowercase version of the
-	    // raw string
-	    , compareString =  opts.caseSensitive && string || string.toLowerCase()
-	    , ch, compareChar;
-
-	  pattern = opts.caseSensitive && pattern || pattern.toLowerCase();
-
-	  // For each character in the string, either add it to the result
-	  // or wrap in template if it's the next string in the pattern
-	  for(var idx = 0; idx < len; idx++) {
-	    ch = string[idx];
-	    if(compareString[idx] === pattern[patternIdx]) {
-	      ch = pre + ch + post;
-	      patternIdx += 1;
-
-	      // consecutive characters should increase the score more than linearly
-	      currScore += 1 + currScore;
-	    } else {
-	      currScore = 0;
-	    }
-	    totalScore += currScore;
-	    result[result.length] = ch;
-	  }
-
-	  // return rendered string if we have a match for every char
-	  if(patternIdx === pattern.length) {
-	    return {rendered: result.join(''), score: totalScore};
-	  }
-
-	  return null;
-	};
-
-	// The normal entry point. Filters `arr` for matches against `pattern`.
-	// It returns an array with matching values of the type:
-	//
-	//     [{
-	//         string:   '<b>lah' // The rendered string
-	//       , index:    2        // The index of the element in `arr`
-	//       , original: 'blah'   // The original element in `arr`
-	//     }]
-	//
-	// `opts` is an optional argument bag. Details:
-	//
-	//    opts = {
-	//        // string to put before a matching character
-	//        pre:     '<b>'
-	//
-	//        // string to put after matching character
-	//      , post:    '</b>'
-	//
-	//        // Optional function. Input is an entry in the given arr`,
-	//        // output should be the string to test `pattern` against.
-	//        // In this example, if `arr = [{crying: 'koala'}]` we would return
-	//        // 'koala'.
-	//      , extract: function(arg) { return arg.crying; }
-	//    }
-	fuzzy.filter = function(pattern, arr, opts) {
-	  opts = opts || {};
-	  return arr
-	    .reduce(function(prev, element, idx, arr) {
-	      var str = element;
-	      if(opts.extract) {
-	        str = opts.extract(element);
-	      }
-	      var rendered = fuzzy.match(pattern, str, opts);
-	      if(rendered != null) {
-	        prev[prev.length] = {
-	            string: rendered.rendered
-	          , score: rendered.score
-	          , index: idx
-	          , original: element
-	        };
-	      }
-	      return prev;
-	    }, [])
-
-	    // Sort by score. Browsers are inconsistent wrt stable/unstable
-	    // sorting, so force stable by using the index in the case of tie.
-	    // See http://ofb.net/~sethml/is-sort-stable.html
-	    .sort(function(a,b) {
-	      var compare = b.score - a.score;
-	      if(compare) return compare;
-	      return a.index - b.index;
-	    });
-	};
-
-
-	}());
-
-
-
-/***/ },
-/* 162 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.2.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var baseAt = __webpack_require__(163),
-	    baseFlatten = __webpack_require__(164),
-	    restParam = __webpack_require__(167);
-
-	/**
-	 * Creates an array of elements corresponding to the given keys, or indexes,
-	 * of `collection`. Keys may be specified as individual arguments or as arrays
-	 * of keys.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Collection
-	 * @param {Array|Object|string} collection The collection to iterate over.
-	 * @param {...(number|number[]|string|string[])} [props] The property names
-	 *  or indexes of elements to pick, specified individually or in arrays.
-	 * @returns {Array} Returns the new array of picked elements.
-	 * @example
-	 *
-	 * _.at(['a', 'b', 'c'], [0, 2]);
-	 * // => ['a', 'c']
-	 *
-	 * _.at(['barney', 'fred', 'pebbles'], 0, 2);
-	 * // => ['barney', 'pebbles']
-	 */
-	var at = restParam(function(collection, props) {
-	  return baseAt(collection, baseFlatten(props));
-	});
-
-	module.exports = at;
-
-
-/***/ },
-/* 163 */
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-
-	/** Used to detect unsigned integer values. */
-	var reIsUint = /^\d+$/;
-
-	/**
-	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
-	 * of an array-like value.
-	 */
-	var MAX_SAFE_INTEGER = 9007199254740991;
-
-	/**
-	 * The base implementation of `_.at` without support for string collections
-	 * and individual key arguments.
-	 *
-	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {number[]|string[]} props The property names or indexes of elements to pick.
-	 * @returns {Array} Returns the new array of picked elements.
-	 */
-	function baseAt(collection, props) {
-	  var index = -1,
-	      isNil = collection == null,
-	      isArr = !isNil && isArrayLike(collection),
-	      length = isArr ? collection.length : 0,
-	      propsLength = props.length,
-	      result = Array(propsLength);
-
-	  while(++index < propsLength) {
-	    var key = props[index];
-	    if (isArr) {
-	      result[index] = isIndex(key, length) ? collection[key] : undefined;
-	    } else {
-	      result[index] = isNil ? undefined : collection[key];
-	    }
-	  }
-	  return result;
-	}
-
-	/**
-	 * The base implementation of `_.property` without support for deep paths.
-	 *
-	 * @private
-	 * @param {string} key The key of the property to get.
-	 * @returns {Function} Returns the new function.
-	 */
-	function baseProperty(key) {
-	  return function(object) {
-	    return object == null ? undefined : object[key];
-	  };
-	}
-
-	/**
-	 * Gets the "length" property value of `object`.
-	 *
-	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
-	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @returns {*} Returns the "length" value.
-	 */
-	var getLength = baseProperty('length');
-
-	/**
-	 * Checks if `value` is array-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
-	 */
-	function isArrayLike(value) {
-	  return value != null && isLength(getLength(value));
-	}
-
-	/**
-	 * Checks if `value` is a valid array-like index.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
-	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
-	 */
-	function isIndex(value, length) {
-	  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
-	  length = length == null ? MAX_SAFE_INTEGER : length;
-	  return value > -1 && value % 1 == 0 && value < length;
-	}
-
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-
-	module.exports = baseAt;
-
-
-/***/ },
-/* 164 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.1.4 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var isArguments = __webpack_require__(165),
-	    isArray = __webpack_require__(166);
-
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return !!value && typeof value == 'object';
-	}
-
-	/**
-	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
-	 * of an array-like value.
-	 */
-	var MAX_SAFE_INTEGER = 9007199254740991;
-
-	/**
-	 * Appends the elements of `values` to `array`.
-	 *
-	 * @private
-	 * @param {Array} array The array to modify.
-	 * @param {Array} values The values to append.
-	 * @returns {Array} Returns `array`.
-	 */
-	function arrayPush(array, values) {
-	  var index = -1,
-	      length = values.length,
-	      offset = array.length;
-
-	  while (++index < length) {
-	    array[offset + index] = values[index];
-	  }
-	  return array;
-	}
-
-	/**
-	 * The base implementation of `_.flatten` with added support for restricting
-	 * flattening and specifying the start index.
-	 *
-	 * @private
-	 * @param {Array} array The array to flatten.
-	 * @param {boolean} [isDeep] Specify a deep flatten.
-	 * @param {boolean} [isStrict] Restrict flattening to arrays-like objects.
-	 * @param {Array} [result=[]] The initial result value.
-	 * @returns {Array} Returns the new flattened array.
-	 */
-	function baseFlatten(array, isDeep, isStrict, result) {
-	  result || (result = []);
-
-	  var index = -1,
-	      length = array.length;
-
-	  while (++index < length) {
-	    var value = array[index];
-	    if (isObjectLike(value) && isArrayLike(value) &&
-	        (isStrict || isArray(value) || isArguments(value))) {
-	      if (isDeep) {
-	        // Recursively flatten arrays (susceptible to call stack limits).
-	        baseFlatten(value, isDeep, isStrict, result);
-	      } else {
-	        arrayPush(result, value);
-	      }
-	    } else if (!isStrict) {
-	      result[result.length] = value;
-	    }
-	  }
-	  return result;
-	}
-
-	/**
-	 * The base implementation of `_.property` without support for deep paths.
-	 *
-	 * @private
-	 * @param {string} key The key of the property to get.
-	 * @returns {Function} Returns the new function.
-	 */
-	function baseProperty(key) {
-	  return function(object) {
-	    return object == null ? undefined : object[key];
-	  };
-	}
-
-	/**
-	 * Gets the "length" property value of `object`.
-	 *
-	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
-	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @returns {*} Returns the "length" value.
-	 */
-	var getLength = baseProperty('length');
-
-	/**
-	 * Checks if `value` is array-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
-	 */
-	function isArrayLike(value) {
-	  return value != null && isLength(getLength(value));
-	}
-
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-
-	module.exports = baseFlatten;
-
-
-/***/ },
-/* 165 */
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return !!value && typeof value == 'object';
-	}
-
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-
-	/** Native method references. */
-	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
-
-	/**
-	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
-	 * of an array-like value.
-	 */
-	var MAX_SAFE_INTEGER = 9007199254740991;
-
-	/**
-	 * The base implementation of `_.property` without support for deep paths.
-	 *
-	 * @private
-	 * @param {string} key The key of the property to get.
-	 * @returns {Function} Returns the new function.
-	 */
-	function baseProperty(key) {
-	  return function(object) {
-	    return object == null ? undefined : object[key];
-	  };
-	}
-
-	/**
-	 * Gets the "length" property value of `object`.
-	 *
-	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
-	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @returns {*} Returns the "length" value.
-	 */
-	var getLength = baseProperty('length');
-
-	/**
-	 * Checks if `value` is array-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
-	 */
-	function isArrayLike(value) {
-	  return value != null && isLength(getLength(value));
-	}
-
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-
-	/**
-	 * Checks if `value` is classified as an `arguments` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isArguments(function() { return arguments; }());
-	 * // => true
-	 *
-	 * _.isArguments([1, 2, 3]);
-	 * // => false
-	 */
-	function isArguments(value) {
-	  return isObjectLike(value) && isArrayLike(value) &&
-	    hasOwnProperty.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee');
-	}
-
-	module.exports = isArguments;
-
-
-/***/ },
-/* 166 */
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-
-	/** `Object#toString` result references. */
-	var arrayTag = '[object Array]',
-	    funcTag = '[object Function]';
-
-	/** Used to detect host constructors (Safari > 5). */
-	var reIsHostCtor = /^\[object .+?Constructor\]$/;
-
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return !!value && typeof value == 'object';
-	}
-
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-
-	/** Used to resolve the decompiled source of functions. */
-	var fnToString = Function.prototype.toString;
-
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-
-	/**
-	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
-	 * of values.
-	 */
-	var objToString = objectProto.toString;
-
-	/** Used to detect if a method is native. */
-	var reIsNative = RegExp('^' +
-	  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
-	  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-	);
-
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeIsArray = getNative(Array, 'isArray');
-
-	/**
-	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
-	 * of an array-like value.
-	 */
-	var MAX_SAFE_INTEGER = 9007199254740991;
-
-	/**
-	 * Gets the native function at `key` of `object`.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @param {string} key The key of the method to get.
-	 * @returns {*} Returns the function if it's native, else `undefined`.
-	 */
-	function getNative(object, key) {
-	  var value = object == null ? undefined : object[key];
-	  return isNative(value) ? value : undefined;
-	}
-
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-
-	/**
-	 * Checks if `value` is classified as an `Array` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isArray([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isArray(function() { return arguments; }());
-	 * // => false
-	 */
-	var isArray = nativeIsArray || function(value) {
-	  return isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag;
-	};
-
-	/**
-	 * Checks if `value` is classified as a `Function` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isFunction(_);
-	 * // => true
-	 *
-	 * _.isFunction(/abc/);
-	 * // => false
-	 */
-	function isFunction(value) {
-	  // The use of `Object#toString` avoids issues with the `typeof` operator
-	  // in older versions of Chrome and Safari which return 'function' for regexes
-	  // and Safari 8 equivalents which return 'object' for typed array constructors.
-	  return isObject(value) && objToString.call(value) == funcTag;
-	}
-
-	/**
-	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return !!value && (type == 'object' || type == 'function');
-	}
-
-	/**
-	 * Checks if `value` is a native function.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
-	 * @example
-	 *
-	 * _.isNative(Array.prototype.push);
-	 * // => true
-	 *
-	 * _.isNative(_);
-	 * // => false
-	 */
-	function isNative(value) {
-	  if (value == null) {
-	    return false;
-	  }
-	  if (isFunction(value)) {
-	    return reIsNative.test(fnToString.call(value));
-	  }
-	  return isObjectLike(value) && reIsHostCtor.test(value);
-	}
-
-	module.exports = isArray;
-
-
-/***/ },
-/* 167 */
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-
-	/** Used as the `TypeError` message for "Functions" methods. */
-	var FUNC_ERROR_TEXT = 'Expected a function';
-
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeMax = Math.max;
-
-	/**
-	 * Creates a function that invokes `func` with the `this` binding of the
-	 * created function and arguments from `start` and beyond provided as an array.
-	 *
-	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Function
-	 * @param {Function} func The function to apply a rest parameter to.
-	 * @param {number} [start=func.length-1] The start position of the rest parameter.
-	 * @returns {Function} Returns the new function.
-	 * @example
-	 *
-	 * var say = _.restParam(function(what, names) {
-	 *   return what + ' ' + _.initial(names).join(', ') +
-	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
-	 * });
-	 *
-	 * say('hello', 'fred', 'barney', 'pebbles');
-	 * // => 'hello fred, barney, & pebbles'
-	 */
-	function restParam(func, start) {
-	  if (typeof func != 'function') {
-	    throw new TypeError(FUNC_ERROR_TEXT);
-	  }
-	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
-	  return function() {
-	    var args = arguments,
-	        index = -1,
-	        length = nativeMax(args.length - start, 0),
-	        rest = Array(length);
-
-	    while (++index < length) {
-	      rest[index] = args[start + index];
-	    }
-	    switch (start) {
-	      case 0: return func.call(this, rest);
-	      case 1: return func.call(this, args[0], rest);
-	      case 2: return func.call(this, args[0], args[1], rest);
-	    }
-	    var otherArgs = Array(start + 1);
-	    index = -1;
-	    while (++index < start) {
-	      otherArgs[index] = args[index];
-	    }
-	    otherArgs[start] = rest;
-	    return func.apply(this, otherArgs);
-	  };
-	}
-
-	module.exports = restParam;
-
-
-/***/ },
-/* 168 */
-/***/ function(module, exports, __webpack_require__) {
-
-	//     keymaster.js
-	//     (c) 2011-2013 Thomas Fuchs
-	//     keymaster.js may be freely distributed under the MIT license.
-
-	;(function(global){
-	  var k,
-	    _handlers = {},
-	    _mods = { 16: false, 18: false, 17: false, 91: false },
-	    _scope = 'all',
-	    // modifier keys
-	    _MODIFIERS = {
-	      '⇧': 16, shift: 16,
-	      '⌥': 18, alt: 18, option: 18,
-	      '⌃': 17, ctrl: 17, control: 17,
-	      '⌘': 91, command: 91
-	    },
-	    // special keys
-	    _MAP = {
-	      backspace: 8, tab: 9, clear: 12,
-	      enter: 13, 'return': 13,
-	      esc: 27, escape: 27, space: 32,
-	      left: 37, up: 38,
-	      right: 39, down: 40,
-	      del: 46, 'delete': 46,
-	      home: 36, end: 35,
-	      pageup: 33, pagedown: 34,
-	      ',': 188, '.': 190, '/': 191,
-	      '`': 192, '-': 189, '=': 187,
-	      ';': 186, '\'': 222,
-	      '[': 219, ']': 221, '\\': 220
-	    },
-	    code = function(x){
-	      return _MAP[x] || x.toUpperCase().charCodeAt(0);
-	    },
-	    _downKeys = [];
-
-	  for(k=1;k<20;k++) _MAP['f'+k] = 111+k;
-
-	  // IE doesn't support Array#indexOf, so have a simple replacement
-	  function index(array, item){
-	    var i = array.length;
-	    while(i--) if(array[i]===item) return i;
-	    return -1;
-	  }
-
-	  // for comparing mods before unassignment
-	  function compareArray(a1, a2) {
-	    if (a1.length != a2.length) return false;
-	    for (var i = 0; i < a1.length; i++) {
-	        if (a1[i] !== a2[i]) return false;
-	    }
-	    return true;
-	  }
-
-	  var modifierMap = {
-	      16:'shiftKey',
-	      18:'altKey',
-	      17:'ctrlKey',
-	      91:'metaKey'
-	  };
-	  function updateModifierKey(event) {
-	      for(k in _mods) _mods[k] = event[modifierMap[k]];
-	  };
-
-	  // handle keydown event
-	  function dispatch(event) {
-	    var key, handler, k, i, modifiersMatch, scope;
-	    key = event.keyCode;
-
-	    if (index(_downKeys, key) == -1) {
-	        _downKeys.push(key);
-	    }
-
-	    // if a modifier key, set the key.<modifierkeyname> property to true and return
-	    if(key == 93 || key == 224) key = 91; // right command on webkit, command on Gecko
-	    if(key in _mods) {
-	      _mods[key] = true;
-	      // 'assignKey' from inside this closure is exported to window.key
-	      for(k in _MODIFIERS) if(_MODIFIERS[k] == key) assignKey[k] = true;
-	      return;
-	    }
-	    updateModifierKey(event);
-
-	    // see if we need to ignore the keypress (filter() can can be overridden)
-	    // by default ignore key presses if a select, textarea, or input is focused
-	    if(!assignKey.filter.call(this, event)) return;
-
-	    // abort if no potentially matching shortcuts found
-	    if (!(key in _handlers)) return;
-
-	    scope = getScope();
-
-	    // for each potential shortcut
-	    for (i = 0; i < _handlers[key].length; i++) {
-	      handler = _handlers[key][i];
-
-	      // see if it's in the current scope
-	      if(handler.scope == scope || handler.scope == 'all'){
-	        // check if modifiers match if any
-	        modifiersMatch = handler.mods.length > 0;
-	        for(k in _mods)
-	          if((!_mods[k] && index(handler.mods, +k) > -1) ||
-	            (_mods[k] && index(handler.mods, +k) == -1)) modifiersMatch = false;
-	        // call the handler and stop the event if neccessary
-	        if((handler.mods.length == 0 && !_mods[16] && !_mods[18] && !_mods[17] && !_mods[91]) || modifiersMatch){
-	          if(handler.method(event, handler)===false){
-	            if(event.preventDefault) event.preventDefault();
-	              else event.returnValue = false;
-	            if(event.stopPropagation) event.stopPropagation();
-	            if(event.cancelBubble) event.cancelBubble = true;
-	          }
-	        }
-	      }
-	    }
-	  };
-
-	  // unset modifier keys on keyup
-	  function clearModifier(event){
-	    var key = event.keyCode, k,
-	        i = index(_downKeys, key);
-
-	    // remove key from _downKeys
-	    if (i >= 0) {
-	        _downKeys.splice(i, 1);
-	    }
-
-	    if(key == 93 || key == 224) key = 91;
-	    if(key in _mods) {
-	      _mods[key] = false;
-	      for(k in _MODIFIERS) if(_MODIFIERS[k] == key) assignKey[k] = false;
-	    }
-	  };
-
-	  function resetModifiers() {
-	    for(k in _mods) _mods[k] = false;
-	    for(k in _MODIFIERS) assignKey[k] = false;
-	  };
-
-	  // parse and assign shortcut
-	  function assignKey(key, scope, method){
-	    var keys, mods;
-	    keys = getKeys(key);
-	    if (method === undefined) {
-	      method = scope;
-	      scope = 'all';
-	    }
-
-	    // for each shortcut
-	    for (var i = 0; i < keys.length; i++) {
-	      // set modifier keys if any
-	      mods = [];
-	      key = keys[i].split('+');
-	      if (key.length > 1){
-	        mods = getMods(key);
-	        key = [key[key.length-1]];
-	      }
-	      // convert to keycode and...
-	      key = key[0]
-	      key = code(key);
-	      // ...store handler
-	      if (!(key in _handlers)) _handlers[key] = [];
-	      _handlers[key].push({ shortcut: keys[i], scope: scope, method: method, key: keys[i], mods: mods });
-	    }
-	  };
-
-	  // unbind all handlers for given key in current scope
-	  function unbindKey(key, scope) {
-	    var multipleKeys, keys,
-	      mods = [],
-	      i, j, obj;
-
-	    multipleKeys = getKeys(key);
-
-	    for (j = 0; j < multipleKeys.length; j++) {
-	      keys = multipleKeys[j].split('+');
-
-	      if (keys.length > 1) {
-	        mods = getMods(keys);
-	        key = keys[keys.length - 1];
-	      }
-
-	      key = code(key);
-
-	      if (scope === undefined) {
-	        scope = getScope();
-	      }
-	      if (!_handlers[key]) {
-	        return;
-	      }
-	      for (i = 0; i < _handlers[key].length; i++) {
-	        obj = _handlers[key][i];
-	        // only clear handlers if correct scope and mods match
-	        if (obj.scope === scope && compareArray(obj.mods, mods)) {
-	          _handlers[key][i] = {};
-	        }
-	      }
-	    }
-	  };
-
-	  // Returns true if the key with code 'keyCode' is currently down
-	  // Converts strings into key codes.
-	  function isPressed(keyCode) {
-	      if (typeof(keyCode)=='string') {
-	        keyCode = code(keyCode);
-	      }
-	      return index(_downKeys, keyCode) != -1;
-	  }
-
-	  function getPressedKeyCodes() {
-	      return _downKeys.slice(0);
-	  }
-
-	  function filter(event){
-	    var tagName = (event.target || event.srcElement).tagName;
-	    // ignore keypressed in any elements that support keyboard data input
-	    return !(tagName == 'INPUT' || tagName == 'SELECT' || tagName == 'TEXTAREA');
-	  }
-
-	  // initialize key.<modifier> to false
-	  for(k in _MODIFIERS) assignKey[k] = false;
-
-	  // set current scope (default 'all')
-	  function setScope(scope){ _scope = scope || 'all' };
-	  function getScope(){ return _scope || 'all' };
-
-	  // delete all handlers for a given scope
-	  function deleteScope(scope){
-	    var key, handlers, i;
-
-	    for (key in _handlers) {
-	      handlers = _handlers[key];
-	      for (i = 0; i < handlers.length; ) {
-	        if (handlers[i].scope === scope) handlers.splice(i, 1);
-	        else i++;
-	      }
-	    }
-	  };
-
-	  // abstract key logic for assign and unassign
-	  function getKeys(key) {
-	    var keys;
-	    key = key.replace(/\s/g, '');
-	    keys = key.split(',');
-	    if ((keys[keys.length - 1]) == '') {
-	      keys[keys.length - 2] += ',';
-	    }
-	    return keys;
-	  }
-
-	  // abstract mods logic for assign and unassign
-	  function getMods(key) {
-	    var mods = key.slice(0, key.length - 1);
-	    for (var mi = 0; mi < mods.length; mi++)
-	    mods[mi] = _MODIFIERS[mods[mi]];
-	    return mods;
-	  }
-
-	  // cross-browser events
-	  function addEvent(object, event, method) {
-	    if (object.addEventListener)
-	      object.addEventListener(event, method, false);
-	    else if(object.attachEvent)
-	      object.attachEvent('on'+event, function(){ method(window.event) });
-	  };
-
-	  // set the handlers globally on document
-	  addEvent(document, 'keydown', function(event) { dispatch(event) }); // Passing _scope to a callback to ensure it remains the same by execution. Fixes #48
-	  addEvent(document, 'keyup', clearModifier);
-
-	  // reset modifiers to false whenever the window is (re)focused.
-	  addEvent(window, 'focus', resetModifiers);
-
-	  // store previously defined key
-	  var previousKey = global.key;
-
-	  // restore previously defined key and return reference to our key object
-	  function noConflict() {
-	    var k = global.key;
-	    global.key = previousKey;
-	    return k;
-	  }
-
-	  // set window.key and window.key.set/get/deleteScope, and the default filter
-	  global.key = assignKey;
-	  global.key.setScope = setScope;
-	  global.key.getScope = getScope;
-	  global.key.deleteScope = deleteScope;
-	  global.key.filter = filter;
-	  global.key.isPressed = isPressed;
-	  global.key.getPressedKeyCodes = getPressedKeyCodes;
-	  global.key.noConflict = noConflict;
-	  global.key.unbind = unbindKey;
-
-	  if(true) module.exports = assignKey;
-
-	})(this);
-
-
-/***/ },
-/* 169 */
-/***/ function(module, exports) {
-
-	module.exports = {
-
-	   sync_scroll: true
-	  ,default_filename: '*scratch*'
-
-	}
-
-
-
-/***/ },
-/* 170 */
-/***/ function(module, exports) {
-
-	var d = module.exports = {}
-
-
-	d.eframe = $('#editor-frame')
-	d.md = $('.markdown-body')
-	d.preview = $('#preview')
-
-	d.flist = $('#file-list')
-	d.flist_frame = d.flist.parent()
-	d.flist_search = $('#file-list-search')
-
-	d.ed = $('#editor')
-	d.rs = $('#rs')
-
-	d.bod = $('body')
-
-
-
-
-/***/ },
-/* 171 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(global) {/**
-	 * lodash 3.1.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var baseToString = __webpack_require__(172),
-	    createPadding = __webpack_require__(173);
-
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeCeil = Math.ceil,
-	    nativeFloor = Math.floor,
-	    nativeIsFinite = global.isFinite;
-
-	/**
-	 * Pads `string` on the left and right sides if it's shorter than `length`.
-	 * Padding characters are truncated if they can't be evenly divided by `length`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category String
-	 * @param {string} [string=''] The string to pad.
-	 * @param {number} [length=0] The padding length.
-	 * @param {string} [chars=' '] The string used as padding.
-	 * @returns {string} Returns the padded string.
-	 * @example
-	 *
-	 * _.pad('abc', 8);
-	 * // => '  abc   '
-	 *
-	 * _.pad('abc', 8, '_-');
-	 * // => '_-abc_-_'
-	 *
-	 * _.pad('abc', 3);
-	 * // => 'abc'
-	 */
-	function pad(string, length, chars) {
-	  string = baseToString(string);
-	  length = +length;
-
-	  var strLength = string.length;
-	  if (strLength >= length || !nativeIsFinite(length)) {
-	    return string;
-	  }
-	  var mid = (length - strLength) / 2,
-	      leftLength = nativeFloor(mid),
-	      rightLength = nativeCeil(mid);
-
-	  chars = createPadding('', rightLength, chars);
-	  return chars.slice(0, leftLength) + string + chars;
-	}
-
-	module.exports = pad;
-
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 172 */
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-
-	/**
-	 * Converts `value` to a string if it's not one. An empty string is returned
-	 * for `null` or `undefined` values.
-	 *
-	 * @private
-	 * @param {*} value The value to process.
-	 * @returns {string} Returns the string.
-	 */
-	function baseToString(value) {
-	  return value == null ? '' : (value + '');
-	}
-
-	module.exports = baseToString;
-
-
-/***/ },
-/* 173 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(global) {/**
-	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var repeat = __webpack_require__(174);
-
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeCeil = Math.ceil,
-	    nativeIsFinite = global.isFinite;
-
-	/**
-	 * Creates the padding required for `string` based on the given `length`.
-	 * The `chars` string is truncated if the number of characters exceeds `length`.
-	 *
-	 * @private
-	 * @param {string} string The string to create padding for.
-	 * @param {number} [length=0] The padding length.
-	 * @param {string} [chars=' '] The string used as padding.
-	 * @returns {string} Returns the pad for `string`.
-	 */
-	function createPadding(string, length, chars) {
-	  var strLength = string.length;
-	  length = +length;
-
-	  if (strLength >= length || !nativeIsFinite(length)) {
-	    return '';
-	  }
-	  var padLength = length - strLength;
-	  chars = chars == null ? ' ' : (chars + '');
-	  return repeat(chars, nativeCeil(padLength / chars.length)).slice(0, padLength);
-	}
-
-	module.exports = createPadding;
-
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 174 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(global) {/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var baseToString = __webpack_require__(172);
-
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeFloor = Math.floor,
-	    nativeIsFinite = global.isFinite;
-
-	/**
-	 * Repeats the given string `n` times.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category String
-	 * @param {string} [string=''] The string to repeat.
-	 * @param {number} [n=0] The number of times to repeat the string.
-	 * @returns {string} Returns the repeated string.
-	 * @example
-	 *
-	 * _.repeat('*', 3);
-	 * // => '***'
-	 *
-	 * _.repeat('abc', 2);
-	 * // => 'abcabc'
-	 *
-	 * _.repeat('abc', 0);
-	 * // => ''
-	 */
-	function repeat(string, n) {
-	  var result = '';
-	  string = baseToString(string);
-	  n = +n;
-	  if (n < 1 || !string || !nativeIsFinite(n)) {
-	    return result;
-	  }
-	  // Leverage the exponentiation by squaring algorithm for a faster repeat.
-	  // See https://en.wikipedia.org/wiki/Exponentiation_by_squaring for more details.
-	  do {
-	    if (n % 2) {
-	      result += string;
-	    }
-	    n = nativeFloor(n / 2);
-	    string += string;
-	  } while (n);
-
-	  return result;
-	}
-
-	module.exports = repeat;
-
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 175 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
@@ -22381,6 +20724,1724 @@
 	}).call(function() {
 	  return this || (typeof window !== 'undefined' ? window : global);
 	}());
+
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 160 */
+/***/ function(module, exports) {
+
+	var d = module.exports = {}
+
+
+	d.eframe = $('#editor-frame')
+	d.md = $('.markdown-body')
+	d.preview = $('#preview')
+
+	d.flist = $('#file-list')
+	d.flist_frame = d.flist.parent()
+	d.flist_search = $('#file-list-search')
+
+	d.ed = $('#editor')
+	d.rs = $('#rs')
+
+	d.bod = $('body')
+
+
+
+
+/***/ },
+/* 161 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.2.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/** Used as the `TypeError` message for "Functions" methods. */
+	var FUNC_ERROR_TEXT = 'Expected a function';
+
+	/**
+	 * Creates a `_.flow` or `_.flowRight` function.
+	 *
+	 * @private
+	 * @param {boolean} [fromRight] Specify iterating from right to left.
+	 * @returns {Function} Returns the new flow function.
+	 */
+	function createFlow(fromRight) {
+	  return function() {
+	    var length = arguments.length,
+	        index = fromRight ? length : -1,
+	        leftIndex = 0,
+	        funcs = Array(length);
+
+	    while ((fromRight ? index-- : ++index < length)) {
+	      var func = funcs[leftIndex++] = arguments[index];
+	      if (typeof func != 'function') {
+	        throw new TypeError(FUNC_ERROR_TEXT);
+	      }
+	    }
+	    return function() {
+	      var index = 0,
+	          result = length ? funcs[index].apply(this, arguments) : arguments[0];
+
+	      while (++index < length) {
+	        result = funcs[index].call(this, result);
+	      }
+	      return result;
+	    };
+	  };
+	}
+
+	/**
+	 * Creates a function that returns the result of invoking the provided
+	 * functions with the `this` binding of the created function, where each
+	 * successive invocation is supplied the return value of the previous.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Function
+	 * @param {...Function} [funcs] Functions to invoke.
+	 * @returns {Function} Returns the new function.
+	 * @example
+	 *
+	 * function square(n) {
+	 *   return n * n;
+	 * }
+	 *
+	 * var addSquare = _.flow(_.add, square);
+	 * addSquare(1, 2);
+	 * // => 9
+	 */
+	var flow = createFlow();
+
+	module.exports = flow;
+
+
+/***/ },
+/* 162 */
+/***/ function(module, exports) {
+
+	module.exports = {
+
+	   sync_scroll: true
+	  ,default_filename: '*scratch*'
+
+	  ,CURRENT_FILE: null
+
+	}
+
+
+
+/***/ },
+/* 163 */
+/***/ function(module, exports) {
+
+	module.exports = {
+
+	  into: function(obj, k, opts) {
+	    /* Returns a function that puts a 'val' into field 'k' of 'obj', returning 'val'
+	     * Options:
+	     *  - assign: if true, do obj.field = x ; if false, obj.field(x)
+	     *  - default: provide a default value if config field not found
+	     */
+
+	    opts || (opts = {})
+
+	    return function(val) {
+	      if (opts.default && (val == null))
+	        val = opts.default;
+
+	      if (opts.assign) { return obj[k] = val } 
+	      else { obj[k](val); return val }
+	    }
+	  }
+
+
+	}
+
+
+
+/***/ },
+/* 164 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var storage = __webpack_require__(15)
+
+	function init($ed, $preview) {
+
+	  window.md = {
+	    sync_scroll: function(b) { 
+	      if (b===undefined) { return cfg_load('sync-scroll') }
+	      storage.config('sync-scroll', b)
+	      cfg.sync_scroll = b
+	    }
+
+	    ,css: function($elem, name, css, _val) {
+	      if (css === undefined) { return storage.config(name + '-css', clog) }
+
+	      if (_val) {
+	        var key = css
+	        css = {}
+	        css[key] = _val
+	      }
+
+	      storage.config(name + '-css', css)
+	      $elem.css(css)
+	    }
+
+	    ,reset_config: function(k) {
+	      if (k) {
+	        if (k instanceof Array) 
+	          k.forEach(md.reset_config);
+	        else 
+	          storage.config(k, null);
+	      } else {
+	        if (confirm("Erase all saved config?")) {
+	          window.md.reset_config([
+	            'sync-scroll', 
+	            'editor-css', 
+	            'preview-css',
+	            'rs-position'
+	          ])
+
+	          location.reload()
+	        } else {
+	          console.log('Configuration left unchanged.')
+	        }
+	      }
+	    }
+
+	    ,rm: function(filename) {
+	      if (!filename) return;
+
+	      if (! (filename instanceof Array))
+	        filename = [filename];
+
+	      if (confirm("About to remove files:\n\n-----\n\n" + filename.join("\n") + '\n\n-----\n\nReally do it?')) {
+	        filename.forEach(function(f) {
+	          storage.files.store.removeItem(f)
+	        })
+	      }
+	    }
+
+	    ,list_files: function() {
+	      storage.files.store.keys(function(e, ks) {
+	        if (e) throw e;
+	        console.log(ks)
+	      })
+	    }
+
+	    ,storage: storage
+	  }
+
+	  window.md.css.editor = window.md.css.bind(null, $ed, 'editor')
+	  window.md.css.preview = window.md.css.bind(null, $preview, 'preview')
+
+	  print_help()
+
+	}
+
+	function print_help() {
+	  var _ = function(x,s){ console.log('%c'+x, s||'')}
+	    , cmdcss = 'font-family:monospace;padding:4px;display:inline-block;background:#f2f2f2;font-weight:bold;'
+
+	  console.group("%cKeyboard Shortcuts:", 'font-weight:bold;font-size:1.125em;')
+	  _("<" + (is_mac() ? "cmd" : "ctrl") + "-s> :: Save/name file")
+	  _("<ctrl-p> :: Find saved file")
+	  _("<ctrl-=> :: Toggle scroll syncing")
+	  console.groupEnd()
+	  _("")
+
+	  console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
+	  _('md.rm( "filename" )              ||  md.rm(["f1", "f2", ...])')
+	  _('md.css.editor( "prop", "val" )   ||  md.css.editor( {prop:val, ...} )')
+	  _('md.css.preview( "prop", "val" )  ||  md.css.preview({prop:val, ...})')
+	  _('md.css( $elem, "storage-key", {prop:val, ...} )')
+	  _('md.sync_scroll( sync? )')
+	  _('md.reset_config()')
+	  console.groupEnd()
+	  _("")
+	  
+	  if (! is_mac()) {
+	    $('.windosx').text('ctrl')
+	  }
+	}
+
+	function clog() {
+	  console.log.apply(console, arguments)
+	}
+
+	function is_mac() {
+	  return ['Mac68K', 'MacPPC', 'MacIntel'].indexOf(navigator.platform)
+	}
+
+
+	module.exports = {init: init}
+
+
+
+/***/ },
+/* 165 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var storage = __webpack_require__(15)
+	  , search = __webpack_require__(166)
+	  , key = __webpack_require__(174)
+	  , r = __webpack_require__(13)
+	  , cfg = __webpack_require__(162)
+	  , d = __webpack_require__(160)
+
+	function init() {
+	  // always listen for key shortcuts
+	  key.filter = function(){ return true }
+
+
+	  // Document handling
+
+	  key('command+n, ctrl+n', function() {
+	    if (!cfg.CURRENT_FILE || (cfg.CURRENT_FILE == cfg.default_filename)) {
+	      //noop
+	    } else {
+	      r.router.setRoute('/')
+	    }
+
+	    return false
+	  })
+
+	  key('command+s, ctrl+s', function() {
+	    if (!cfg.CURRENT_FILE || (cfg.CURRENT_FILE == cfg.default_filename)) {
+	      // save as a named file
+	      var file_name = prompt('Name this file:')
+	      if (file_name) {
+	        cfg.CURRENT_FILE = file_name
+	        save_file(function(){ r.router.setRoute('/'+file_name) })
+	        storage.files(cfg.default_filename, '')
+	      }
+	    } else {
+	      // placebo
+	      var delay = 210
+	        , old = document.title
+
+	      document.title = '✔ Saved'
+	      setTimeout(function(){ document.title = '✔ ' },       delay)
+	      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 2)
+	      setTimeout(function(){ document.title = '✔ ' },       delay * 3)
+	      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 4)
+	      setTimeout(function(){ document.title = old},         delay * 9)
+	    }
+
+	    return false
+	  })
+
+	  key('ctrl+p', function() {
+	    storage.files.store.keys(function(e, ks) {
+	      if (e) throw e;
+
+	      key.setScope('file-list')
+	      d.flist_frame.show()
+
+	      populate_file_list(ks)
+
+	      d.flist_search.focus()
+	    })
+
+	    return false
+	  })
+
+
+	  // Configuration
+
+	  key('ctrl+=', function() {
+	    storage.config('sync-scroll', function(current) {
+	      cfg.sync_scroll = !current
+	      storage.config('sync-scroll', !current)
+	    })
+	  })
+
+	  key('escape', 'file-list', function() {
+	    d.flist_frame.hide()
+	    key.setScope(null)
+	    return false
+	  })
+
+
+	  search.init()
+	  listen_for_search()
+
+	}
+
+
+	function listen_for_search() {
+	  d.flist_search.on('input', function() {
+	    var q = d.flist_search.val()
+	    populate_file_list(search.search(q))
+	  })
+	}
+
+	function populate_file_list(ks) {
+	  d.flist.empty()
+	  ks.forEach(function(k) {
+	    d.flist.append('<li><a href="#/'+k+'">'+k+'</li>')
+	  })
+	}
+
+	module.exports = {
+	  init: init
+	}
+
+
+
+/***/ },
+/* 166 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var fuzzy = __webpack_require__(167)
+	  , storage = __webpack_require__(15)
+	  , at = __webpack_require__(168)
+
+	var f, filenames
+
+	function init() {
+	  reload()
+	}
+
+	function reload() {
+	  storage.files.store.keys(function(e, ks) {
+	    if (e) throw e;
+	    filenames = ks
+	  })
+	}
+
+	function search(pattern) {
+	  if (pattern == "")
+	    return filenames;
+
+	  var matches = fuzzy.filter(pattern, filenames).map(function(res) {
+	    return res.original
+	  })
+
+	  return matches
+	}
+
+
+	module.exports = {
+	  init: init,
+	  reload: reload,
+	  search: search
+	}
+
+
+
+/***/ },
+/* 167 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*
+	 * Fuzzy
+	 * https://github.com/myork/fuzzy
+	 *
+	 * Copyright (c) 2012 Matt York
+	 * Licensed under the MIT license.
+	 */
+
+	(function() {
+
+	var root = this;
+
+	var fuzzy = {};
+
+	// Use in node or in browser
+	if (true) {
+	  module.exports = fuzzy;
+	} else {
+	  root.fuzzy = fuzzy;
+	}
+
+	// Return all elements of `array` that have a fuzzy
+	// match against `pattern`.
+	fuzzy.simpleFilter = function(pattern, array) {
+	  return array.filter(function(string) {
+	    return fuzzy.test(pattern, string);
+	  });
+	};
+
+	// Does `pattern` fuzzy match `string`?
+	fuzzy.test = function(pattern, string) {
+	  return fuzzy.match(pattern, string) !== null;
+	};
+
+	// If `pattern` matches `string`, wrap each matching character
+	// in `opts.pre` and `opts.post`. If no match, return null
+	fuzzy.match = function(pattern, string, opts) {
+	  opts = opts || {};
+	  var patternIdx = 0
+	    , result = []
+	    , len = string.length
+	    , totalScore = 0
+	    , currScore = 0
+	    // prefix
+	    , pre = opts.pre || ''
+	    // suffix
+	    , post = opts.post || ''
+	    // String to compare against. This might be a lowercase version of the
+	    // raw string
+	    , compareString =  opts.caseSensitive && string || string.toLowerCase()
+	    , ch, compareChar;
+
+	  pattern = opts.caseSensitive && pattern || pattern.toLowerCase();
+
+	  // For each character in the string, either add it to the result
+	  // or wrap in template if it's the next string in the pattern
+	  for(var idx = 0; idx < len; idx++) {
+	    ch = string[idx];
+	    if(compareString[idx] === pattern[patternIdx]) {
+	      ch = pre + ch + post;
+	      patternIdx += 1;
+
+	      // consecutive characters should increase the score more than linearly
+	      currScore += 1 + currScore;
+	    } else {
+	      currScore = 0;
+	    }
+	    totalScore += currScore;
+	    result[result.length] = ch;
+	  }
+
+	  // return rendered string if we have a match for every char
+	  if(patternIdx === pattern.length) {
+	    return {rendered: result.join(''), score: totalScore};
+	  }
+
+	  return null;
+	};
+
+	// The normal entry point. Filters `arr` for matches against `pattern`.
+	// It returns an array with matching values of the type:
+	//
+	//     [{
+	//         string:   '<b>lah' // The rendered string
+	//       , index:    2        // The index of the element in `arr`
+	//       , original: 'blah'   // The original element in `arr`
+	//     }]
+	//
+	// `opts` is an optional argument bag. Details:
+	//
+	//    opts = {
+	//        // string to put before a matching character
+	//        pre:     '<b>'
+	//
+	//        // string to put after matching character
+	//      , post:    '</b>'
+	//
+	//        // Optional function. Input is an entry in the given arr`,
+	//        // output should be the string to test `pattern` against.
+	//        // In this example, if `arr = [{crying: 'koala'}]` we would return
+	//        // 'koala'.
+	//      , extract: function(arg) { return arg.crying; }
+	//    }
+	fuzzy.filter = function(pattern, arr, opts) {
+	  opts = opts || {};
+	  return arr
+	    .reduce(function(prev, element, idx, arr) {
+	      var str = element;
+	      if(opts.extract) {
+	        str = opts.extract(element);
+	      }
+	      var rendered = fuzzy.match(pattern, str, opts);
+	      if(rendered != null) {
+	        prev[prev.length] = {
+	            string: rendered.rendered
+	          , score: rendered.score
+	          , index: idx
+	          , original: element
+	        };
+	      }
+	      return prev;
+	    }, [])
+
+	    // Sort by score. Browsers are inconsistent wrt stable/unstable
+	    // sorting, so force stable by using the index in the case of tie.
+	    // See http://ofb.net/~sethml/is-sort-stable.html
+	    .sort(function(a,b) {
+	      var compare = b.score - a.score;
+	      if(compare) return compare;
+	      return a.index - b.index;
+	    });
+	};
+
+
+	}());
+
+
+
+/***/ },
+/* 168 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.2.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseAt = __webpack_require__(169),
+	    baseFlatten = __webpack_require__(170),
+	    restParam = __webpack_require__(173);
+
+	/**
+	 * Creates an array of elements corresponding to the given keys, or indexes,
+	 * of `collection`. Keys may be specified as individual arguments or as arrays
+	 * of keys.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Collection
+	 * @param {Array|Object|string} collection The collection to iterate over.
+	 * @param {...(number|number[]|string|string[])} [props] The property names
+	 *  or indexes of elements to pick, specified individually or in arrays.
+	 * @returns {Array} Returns the new array of picked elements.
+	 * @example
+	 *
+	 * _.at(['a', 'b', 'c'], [0, 2]);
+	 * // => ['a', 'c']
+	 *
+	 * _.at(['barney', 'fred', 'pebbles'], 0, 2);
+	 * // => ['barney', 'pebbles']
+	 */
+	var at = restParam(function(collection, props) {
+	  return baseAt(collection, baseFlatten(props));
+	});
+
+	module.exports = at;
+
+
+/***/ },
+/* 169 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/** Used to detect unsigned integer values. */
+	var reIsUint = /^\d+$/;
+
+	/**
+	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+
+	/**
+	 * The base implementation of `_.at` without support for string collections
+	 * and individual key arguments.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {number[]|string[]} props The property names or indexes of elements to pick.
+	 * @returns {Array} Returns the new array of picked elements.
+	 */
+	function baseAt(collection, props) {
+	  var index = -1,
+	      isNil = collection == null,
+	      isArr = !isNil && isArrayLike(collection),
+	      length = isArr ? collection.length : 0,
+	      propsLength = props.length,
+	      result = Array(propsLength);
+
+	  while(++index < propsLength) {
+	    var key = props[index];
+	    if (isArr) {
+	      result[index] = isIndex(key, length) ? collection[key] : undefined;
+	    } else {
+	      result[index] = isNil ? undefined : collection[key];
+	    }
+	  }
+	  return result;
+	}
+
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+
+	/**
+	 * Checks if `value` is array-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+
+	module.exports = baseAt;
+
+
+/***/ },
+/* 170 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.1.4 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var isArguments = __webpack_require__(171),
+	    isArray = __webpack_require__(172);
+
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+
+	/**
+	 * Appends the elements of `values` to `array`.
+	 *
+	 * @private
+	 * @param {Array} array The array to modify.
+	 * @param {Array} values The values to append.
+	 * @returns {Array} Returns `array`.
+	 */
+	function arrayPush(array, values) {
+	  var index = -1,
+	      length = values.length,
+	      offset = array.length;
+
+	  while (++index < length) {
+	    array[offset + index] = values[index];
+	  }
+	  return array;
+	}
+
+	/**
+	 * The base implementation of `_.flatten` with added support for restricting
+	 * flattening and specifying the start index.
+	 *
+	 * @private
+	 * @param {Array} array The array to flatten.
+	 * @param {boolean} [isDeep] Specify a deep flatten.
+	 * @param {boolean} [isStrict] Restrict flattening to arrays-like objects.
+	 * @param {Array} [result=[]] The initial result value.
+	 * @returns {Array} Returns the new flattened array.
+	 */
+	function baseFlatten(array, isDeep, isStrict, result) {
+	  result || (result = []);
+
+	  var index = -1,
+	      length = array.length;
+
+	  while (++index < length) {
+	    var value = array[index];
+	    if (isObjectLike(value) && isArrayLike(value) &&
+	        (isStrict || isArray(value) || isArguments(value))) {
+	      if (isDeep) {
+	        // Recursively flatten arrays (susceptible to call stack limits).
+	        baseFlatten(value, isDeep, isStrict, result);
+	      } else {
+	        arrayPush(result, value);
+	      }
+	    } else if (!isStrict) {
+	      result[result.length] = value;
+	    }
+	  }
+	  return result;
+	}
+
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+
+	/**
+	 * Checks if `value` is array-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+
+	module.exports = baseFlatten;
+
+
+/***/ },
+/* 171 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+
+	/** Native method references. */
+	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+
+	/**
+	 * Checks if `value` is array-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+
+	/**
+	 * Checks if `value` is classified as an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArguments(function() { return arguments; }());
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  return isObjectLike(value) && isArrayLike(value) &&
+	    hasOwnProperty.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee');
+	}
+
+	module.exports = isArguments;
+
+
+/***/ },
+/* 172 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/** `Object#toString` result references. */
+	var arrayTag = '[object Array]',
+	    funcTag = '[object Function]';
+
+	/** Used to detect host constructors (Safari > 5). */
+	var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+
+	/** Used to detect if a method is native. */
+	var reIsNative = RegExp('^' +
+	  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+	  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeIsArray = getNative(Array, 'isArray');
+
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+
+	/**
+	 * Gets the native function at `key` of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @param {string} key The key of the method to get.
+	 * @returns {*} Returns the function if it's native, else `undefined`.
+	 */
+	function getNative(object, key) {
+	  var value = object == null ? undefined : object[key];
+	  return isNative(value) ? value : undefined;
+	}
+
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+
+	/**
+	 * Checks if `value` is classified as an `Array` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArray([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isArray(function() { return arguments; }());
+	 * // => false
+	 */
+	var isArray = nativeIsArray || function(value) {
+	  return isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag;
+	};
+
+	/**
+	 * Checks if `value` is classified as a `Function` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isFunction(_);
+	 * // => true
+	 *
+	 * _.isFunction(/abc/);
+	 * // => false
+	 */
+	function isFunction(value) {
+	  // The use of `Object#toString` avoids issues with the `typeof` operator
+	  // in older versions of Chrome and Safari which return 'function' for regexes
+	  // and Safari 8 equivalents which return 'object' for typed array constructors.
+	  return isObject(value) && objToString.call(value) == funcTag;
+	}
+
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (isFunction(value)) {
+	    return reIsNative.test(fnToString.call(value));
+	  }
+	  return isObjectLike(value) && reIsHostCtor.test(value);
+	}
+
+	module.exports = isArray;
+
+
+/***/ },
+/* 173 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/** Used as the `TypeError` message for "Functions" methods. */
+	var FUNC_ERROR_TEXT = 'Expected a function';
+
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max;
+
+	/**
+	 * Creates a function that invokes `func` with the `this` binding of the
+	 * created function and arguments from `start` and beyond provided as an array.
+	 *
+	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Function
+	 * @param {Function} func The function to apply a rest parameter to.
+	 * @param {number} [start=func.length-1] The start position of the rest parameter.
+	 * @returns {Function} Returns the new function.
+	 * @example
+	 *
+	 * var say = _.restParam(function(what, names) {
+	 *   return what + ' ' + _.initial(names).join(', ') +
+	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
+	 * });
+	 *
+	 * say('hello', 'fred', 'barney', 'pebbles');
+	 * // => 'hello fred, barney, & pebbles'
+	 */
+	function restParam(func, start) {
+	  if (typeof func != 'function') {
+	    throw new TypeError(FUNC_ERROR_TEXT);
+	  }
+	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
+	  return function() {
+	    var args = arguments,
+	        index = -1,
+	        length = nativeMax(args.length - start, 0),
+	        rest = Array(length);
+
+	    while (++index < length) {
+	      rest[index] = args[start + index];
+	    }
+	    switch (start) {
+	      case 0: return func.call(this, rest);
+	      case 1: return func.call(this, args[0], rest);
+	      case 2: return func.call(this, args[0], args[1], rest);
+	    }
+	    var otherArgs = Array(start + 1);
+	    index = -1;
+	    while (++index < start) {
+	      otherArgs[index] = args[index];
+	    }
+	    otherArgs[start] = rest;
+	    return func.apply(this, otherArgs);
+	  };
+	}
+
+	module.exports = restParam;
+
+
+/***/ },
+/* 174 */
+/***/ function(module, exports, __webpack_require__) {
+
+	//     keymaster.js
+	//     (c) 2011-2013 Thomas Fuchs
+	//     keymaster.js may be freely distributed under the MIT license.
+
+	;(function(global){
+	  var k,
+	    _handlers = {},
+	    _mods = { 16: false, 18: false, 17: false, 91: false },
+	    _scope = 'all',
+	    // modifier keys
+	    _MODIFIERS = {
+	      '⇧': 16, shift: 16,
+	      '⌥': 18, alt: 18, option: 18,
+	      '⌃': 17, ctrl: 17, control: 17,
+	      '⌘': 91, command: 91
+	    },
+	    // special keys
+	    _MAP = {
+	      backspace: 8, tab: 9, clear: 12,
+	      enter: 13, 'return': 13,
+	      esc: 27, escape: 27, space: 32,
+	      left: 37, up: 38,
+	      right: 39, down: 40,
+	      del: 46, 'delete': 46,
+	      home: 36, end: 35,
+	      pageup: 33, pagedown: 34,
+	      ',': 188, '.': 190, '/': 191,
+	      '`': 192, '-': 189, '=': 187,
+	      ';': 186, '\'': 222,
+	      '[': 219, ']': 221, '\\': 220
+	    },
+	    code = function(x){
+	      return _MAP[x] || x.toUpperCase().charCodeAt(0);
+	    },
+	    _downKeys = [];
+
+	  for(k=1;k<20;k++) _MAP['f'+k] = 111+k;
+
+	  // IE doesn't support Array#indexOf, so have a simple replacement
+	  function index(array, item){
+	    var i = array.length;
+	    while(i--) if(array[i]===item) return i;
+	    return -1;
+	  }
+
+	  // for comparing mods before unassignment
+	  function compareArray(a1, a2) {
+	    if (a1.length != a2.length) return false;
+	    for (var i = 0; i < a1.length; i++) {
+	        if (a1[i] !== a2[i]) return false;
+	    }
+	    return true;
+	  }
+
+	  var modifierMap = {
+	      16:'shiftKey',
+	      18:'altKey',
+	      17:'ctrlKey',
+	      91:'metaKey'
+	  };
+	  function updateModifierKey(event) {
+	      for(k in _mods) _mods[k] = event[modifierMap[k]];
+	  };
+
+	  // handle keydown event
+	  function dispatch(event) {
+	    var key, handler, k, i, modifiersMatch, scope;
+	    key = event.keyCode;
+
+	    if (index(_downKeys, key) == -1) {
+	        _downKeys.push(key);
+	    }
+
+	    // if a modifier key, set the key.<modifierkeyname> property to true and return
+	    if(key == 93 || key == 224) key = 91; // right command on webkit, command on Gecko
+	    if(key in _mods) {
+	      _mods[key] = true;
+	      // 'assignKey' from inside this closure is exported to window.key
+	      for(k in _MODIFIERS) if(_MODIFIERS[k] == key) assignKey[k] = true;
+	      return;
+	    }
+	    updateModifierKey(event);
+
+	    // see if we need to ignore the keypress (filter() can can be overridden)
+	    // by default ignore key presses if a select, textarea, or input is focused
+	    if(!assignKey.filter.call(this, event)) return;
+
+	    // abort if no potentially matching shortcuts found
+	    if (!(key in _handlers)) return;
+
+	    scope = getScope();
+
+	    // for each potential shortcut
+	    for (i = 0; i < _handlers[key].length; i++) {
+	      handler = _handlers[key][i];
+
+	      // see if it's in the current scope
+	      if(handler.scope == scope || handler.scope == 'all'){
+	        // check if modifiers match if any
+	        modifiersMatch = handler.mods.length > 0;
+	        for(k in _mods)
+	          if((!_mods[k] && index(handler.mods, +k) > -1) ||
+	            (_mods[k] && index(handler.mods, +k) == -1)) modifiersMatch = false;
+	        // call the handler and stop the event if neccessary
+	        if((handler.mods.length == 0 && !_mods[16] && !_mods[18] && !_mods[17] && !_mods[91]) || modifiersMatch){
+	          if(handler.method(event, handler)===false){
+	            if(event.preventDefault) event.preventDefault();
+	              else event.returnValue = false;
+	            if(event.stopPropagation) event.stopPropagation();
+	            if(event.cancelBubble) event.cancelBubble = true;
+	          }
+	        }
+	      }
+	    }
+	  };
+
+	  // unset modifier keys on keyup
+	  function clearModifier(event){
+	    var key = event.keyCode, k,
+	        i = index(_downKeys, key);
+
+	    // remove key from _downKeys
+	    if (i >= 0) {
+	        _downKeys.splice(i, 1);
+	    }
+
+	    if(key == 93 || key == 224) key = 91;
+	    if(key in _mods) {
+	      _mods[key] = false;
+	      for(k in _MODIFIERS) if(_MODIFIERS[k] == key) assignKey[k] = false;
+	    }
+	  };
+
+	  function resetModifiers() {
+	    for(k in _mods) _mods[k] = false;
+	    for(k in _MODIFIERS) assignKey[k] = false;
+	  };
+
+	  // parse and assign shortcut
+	  function assignKey(key, scope, method){
+	    var keys, mods;
+	    keys = getKeys(key);
+	    if (method === undefined) {
+	      method = scope;
+	      scope = 'all';
+	    }
+
+	    // for each shortcut
+	    for (var i = 0; i < keys.length; i++) {
+	      // set modifier keys if any
+	      mods = [];
+	      key = keys[i].split('+');
+	      if (key.length > 1){
+	        mods = getMods(key);
+	        key = [key[key.length-1]];
+	      }
+	      // convert to keycode and...
+	      key = key[0]
+	      key = code(key);
+	      // ...store handler
+	      if (!(key in _handlers)) _handlers[key] = [];
+	      _handlers[key].push({ shortcut: keys[i], scope: scope, method: method, key: keys[i], mods: mods });
+	    }
+	  };
+
+	  // unbind all handlers for given key in current scope
+	  function unbindKey(key, scope) {
+	    var multipleKeys, keys,
+	      mods = [],
+	      i, j, obj;
+
+	    multipleKeys = getKeys(key);
+
+	    for (j = 0; j < multipleKeys.length; j++) {
+	      keys = multipleKeys[j].split('+');
+
+	      if (keys.length > 1) {
+	        mods = getMods(keys);
+	        key = keys[keys.length - 1];
+	      }
+
+	      key = code(key);
+
+	      if (scope === undefined) {
+	        scope = getScope();
+	      }
+	      if (!_handlers[key]) {
+	        return;
+	      }
+	      for (i = 0; i < _handlers[key].length; i++) {
+	        obj = _handlers[key][i];
+	        // only clear handlers if correct scope and mods match
+	        if (obj.scope === scope && compareArray(obj.mods, mods)) {
+	          _handlers[key][i] = {};
+	        }
+	      }
+	    }
+	  };
+
+	  // Returns true if the key with code 'keyCode' is currently down
+	  // Converts strings into key codes.
+	  function isPressed(keyCode) {
+	      if (typeof(keyCode)=='string') {
+	        keyCode = code(keyCode);
+	      }
+	      return index(_downKeys, keyCode) != -1;
+	  }
+
+	  function getPressedKeyCodes() {
+	      return _downKeys.slice(0);
+	  }
+
+	  function filter(event){
+	    var tagName = (event.target || event.srcElement).tagName;
+	    // ignore keypressed in any elements that support keyboard data input
+	    return !(tagName == 'INPUT' || tagName == 'SELECT' || tagName == 'TEXTAREA');
+	  }
+
+	  // initialize key.<modifier> to false
+	  for(k in _MODIFIERS) assignKey[k] = false;
+
+	  // set current scope (default 'all')
+	  function setScope(scope){ _scope = scope || 'all' };
+	  function getScope(){ return _scope || 'all' };
+
+	  // delete all handlers for a given scope
+	  function deleteScope(scope){
+	    var key, handlers, i;
+
+	    for (key in _handlers) {
+	      handlers = _handlers[key];
+	      for (i = 0; i < handlers.length; ) {
+	        if (handlers[i].scope === scope) handlers.splice(i, 1);
+	        else i++;
+	      }
+	    }
+	  };
+
+	  // abstract key logic for assign and unassign
+	  function getKeys(key) {
+	    var keys;
+	    key = key.replace(/\s/g, '');
+	    keys = key.split(',');
+	    if ((keys[keys.length - 1]) == '') {
+	      keys[keys.length - 2] += ',';
+	    }
+	    return keys;
+	  }
+
+	  // abstract mods logic for assign and unassign
+	  function getMods(key) {
+	    var mods = key.slice(0, key.length - 1);
+	    for (var mi = 0; mi < mods.length; mi++)
+	    mods[mi] = _MODIFIERS[mods[mi]];
+	    return mods;
+	  }
+
+	  // cross-browser events
+	  function addEvent(object, event, method) {
+	    if (object.addEventListener)
+	      object.addEventListener(event, method, false);
+	    else if(object.attachEvent)
+	      object.attachEvent('on'+event, function(){ method(window.event) });
+	  };
+
+	  // set the handlers globally on document
+	  addEvent(document, 'keydown', function(event) { dispatch(event) }); // Passing _scope to a callback to ensure it remains the same by execution. Fixes #48
+	  addEvent(document, 'keyup', clearModifier);
+
+	  // reset modifiers to false whenever the window is (re)focused.
+	  addEvent(window, 'focus', resetModifiers);
+
+	  // store previously defined key
+	  var previousKey = global.key;
+
+	  // restore previously defined key and return reference to our key object
+	  function noConflict() {
+	    var k = global.key;
+	    global.key = previousKey;
+	    return k;
+	  }
+
+	  // set window.key and window.key.set/get/deleteScope, and the default filter
+	  global.key = assignKey;
+	  global.key.setScope = setScope;
+	  global.key.getScope = getScope;
+	  global.key.deleteScope = deleteScope;
+	  global.key.filter = filter;
+	  global.key.isPressed = isPressed;
+	  global.key.getPressedKeyCodes = getPressedKeyCodes;
+	  global.key.noConflict = noConflict;
+	  global.key.unbind = unbindKey;
+
+	  if(true) module.exports = assignKey;
+
+	})(this);
+
+
+/***/ },
+/* 175 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/**
+	 * lodash 3.1.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseToString = __webpack_require__(176),
+	    createPadding = __webpack_require__(177);
+
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeCeil = Math.ceil,
+	    nativeFloor = Math.floor,
+	    nativeIsFinite = global.isFinite;
+
+	/**
+	 * Pads `string` on the left and right sides if it's shorter than `length`.
+	 * Padding characters are truncated if they can't be evenly divided by `length`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to pad.
+	 * @param {number} [length=0] The padding length.
+	 * @param {string} [chars=' '] The string used as padding.
+	 * @returns {string} Returns the padded string.
+	 * @example
+	 *
+	 * _.pad('abc', 8);
+	 * // => '  abc   '
+	 *
+	 * _.pad('abc', 8, '_-');
+	 * // => '_-abc_-_'
+	 *
+	 * _.pad('abc', 3);
+	 * // => 'abc'
+	 */
+	function pad(string, length, chars) {
+	  string = baseToString(string);
+	  length = +length;
+
+	  var strLength = string.length;
+	  if (strLength >= length || !nativeIsFinite(length)) {
+	    return string;
+	  }
+	  var mid = (length - strLength) / 2,
+	      leftLength = nativeFloor(mid),
+	      rightLength = nativeCeil(mid);
+
+	  chars = createPadding('', rightLength, chars);
+	  return chars.slice(0, leftLength) + string + chars;
+	}
+
+	module.exports = pad;
+
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 176 */
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+
+	/**
+	 * Converts `value` to a string if it's not one. An empty string is returned
+	 * for `null` or `undefined` values.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {string} Returns the string.
+	 */
+	function baseToString(value) {
+	  return value == null ? '' : (value + '');
+	}
+
+	module.exports = baseToString;
+
+
+/***/ },
+/* 177 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/**
+	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var repeat = __webpack_require__(178);
+
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeCeil = Math.ceil,
+	    nativeIsFinite = global.isFinite;
+
+	/**
+	 * Creates the padding required for `string` based on the given `length`.
+	 * The `chars` string is truncated if the number of characters exceeds `length`.
+	 *
+	 * @private
+	 * @param {string} string The string to create padding for.
+	 * @param {number} [length=0] The padding length.
+	 * @param {string} [chars=' '] The string used as padding.
+	 * @returns {string} Returns the pad for `string`.
+	 */
+	function createPadding(string, length, chars) {
+	  var strLength = string.length;
+	  length = +length;
+
+	  if (strLength >= length || !nativeIsFinite(length)) {
+	    return '';
+	  }
+	  var padLength = length - strLength;
+	  chars = chars == null ? ' ' : (chars + '');
+	  return repeat(chars, nativeCeil(padLength / chars.length)).slice(0, padLength);
+	}
+
+	module.exports = createPadding;
+
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 178 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseToString = __webpack_require__(176);
+
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeFloor = Math.floor,
+	    nativeIsFinite = global.isFinite;
+
+	/**
+	 * Repeats the given string `n` times.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to repeat.
+	 * @param {number} [n=0] The number of times to repeat the string.
+	 * @returns {string} Returns the repeated string.
+	 * @example
+	 *
+	 * _.repeat('*', 3);
+	 * // => '***'
+	 *
+	 * _.repeat('abc', 2);
+	 * // => 'abcabc'
+	 *
+	 * _.repeat('abc', 0);
+	 * // => ''
+	 */
+	function repeat(string, n) {
+	  var result = '';
+	  string = baseToString(string);
+	  n = +n;
+	  if (n < 1 || !string || !nativeIsFinite(n)) {
+	    return result;
+	  }
+	  // Leverage the exponentiation by squaring algorithm for a faster repeat.
+	  // See https://en.wikipedia.org/wiki/Exponentiation_by_squaring for more details.
+	  do {
+	    if (n % 2) {
+	      result += string;
+	    }
+	    n = nativeFloor(n / 2);
+	    string += string;
+	  } while (n);
+
+	  return result;
+	}
+
+	module.exports = repeat;
 
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
