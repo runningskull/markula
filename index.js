@@ -50,13 +50,6 @@ $(function() {
 
 // Private Helpers
 
-function save_file(cb) {
-  var md = d.ed.val()
-  if ('function' != typeof cb) cb = undefined;
-  storage.files(cfg.CURRENT_FILE, md, cb)
-  return md
-}
-
 
 function scroll_syncer() {
   var dirty = false
@@ -133,7 +126,7 @@ function listen_for_scroll() {
 
 function listen_for_input() {
   var _render = render.bind(null,null)
-  d.ed.on('input', throttle(flow(_render, save_file), 20))
+  d.ed.on('input', throttle(flow(_render, u.save_file), 20))
 }
 
 
