@@ -96,13 +96,6 @@
 
 	// Private Helpers
 
-	function save_file(cb) {
-	  var md = d.ed.val()
-	  if ('function' != typeof cb) cb = undefined;
-	  storage.files(cfg.CURRENT_FILE, md, cb)
-	  return md
-	}
-
 
 	function scroll_syncer() {
 	  var dirty = false
@@ -179,7 +172,7 @@
 
 	function listen_for_input() {
 	  var _render = render.bind(null,null)
-	  d.ed.on('input', throttle(flow(_render, save_file), 20))
+	  d.ed.on('input', throttle(flow(_render, u.save_file), 20))
 	}
 
 
@@ -20840,7 +20833,11 @@
 
 /***/ },
 /* 163 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
+
+	var storage = __webpack_require__(15)
+	  , cfg = __webpack_require__(162)
+	  , d = __webpack_require__(160)
 
 	module.exports = {
 
@@ -20860,6 +20857,14 @@
 	      if (opts.assign) { return obj[k] = val } 
 	      else { obj[k](val); return val }
 	    }
+	  }
+
+
+	  ,save_file: function(cb) {
+	    var md = d.ed.val()
+	    if ('function' != typeof cb) cb = undefined;
+	    storage.files(cfg.CURRENT_FILE, md, cb)
+	    return md
 	  }
 
 
@@ -20995,6 +21000,7 @@
 	  , key = __webpack_require__(174)
 	  , r = __webpack_require__(13)
 	  , cfg = __webpack_require__(162)
+	  , u = __webpack_require__(163)
 	  , d = __webpack_require__(160)
 
 	function init() {
@@ -21016,13 +21022,7 @@
 
 	  key('command+s, ctrl+s', function() {
 	    if (!cfg.CURRENT_FILE || (cfg.CURRENT_FILE == cfg.default_filename)) {
-	      // save as a named file
-	      var file_name = prompt('Name this file:')
-	      if (file_name) {
-	        cfg.CURRENT_FILE = file_name
-	        save_file(function(){ r.router.setRoute('/'+file_name) })
-	        storage.files(cfg.default_filename, '')
-	      }
+	      prompt_and_rename()
 	    } else {
 	      // placebo
 	      var delay = 210
@@ -21038,6 +21038,8 @@
 
 	    return false
 	  })
+
+	  key('command+shift+s, ctrl+shift+s', prompt_and_rename)
 
 	  key('ctrl+p', function() {
 	    storage.files.store.keys(function(e, ks) {
@@ -21071,11 +21073,24 @@
 	  })
 
 
+	  // Utils
+
+
 	  search.init()
 	  listen_for_search()
 
 	}
 
+
+	function prompt_and_rename() {
+	  // save as a named file
+	  var file_name = prompt('Name this file:')
+	  if (file_name) {
+	    cfg.CURRENT_FILE = file_name
+	    u.save_file(function(){ r.router.setRoute('/'+file_name) })
+	    storage.files(cfg.default_filename, '')
+	  }
+	}
 
 	function listen_for_search() {
 	  d.flist_search.on('input', function() {
