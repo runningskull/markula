@@ -61,41 +61,24 @@
 
 	// Libraries
 	var throttle = __webpack_require__(10)
-	  , director = __webpack_require__(13)
-	  , storage = __webpack_require__(14)
+	  , storage = __webpack_require__(13)
+	  , director = __webpack_require__(17)
 	  , hljs = __webpack_require__(18)
 	  , flow = __webpack_require__(157)
-	  , search = __webpack_require__(158)
-	  , pad = __webpack_require__(166)
-	  , marked = __webpack_require__(170)
-	  , key = __webpack_require__(171)
-	  , help = __webpack_require__(172)
+	  , help = __webpack_require__(158)
+	  , keys = __webpack_require__(159)
+	  , pad = __webpack_require__(171)
+	  , marked = __webpack_require__(175)
+	  , cfg = __webpack_require__(169)
+	  , d = __webpack_require__(170)
 
-	// Config
-	var cfg = {
-	   sync_scroll: true
-	  ,default_filename: '*scratch*'
-	}
 
-	// Common references
 	var sync_scroll = scroll_syncer()
-	  , $eframe = $('#editor-frame')
-	  , $md = $('.markdown-body')
-	  , $preview = $('#preview')
-	  , $flist = $('#file-list')
-	  , $ed = $('#editor')
-	  , $bod = $('body')
-	  , $rs = $('#rs')
-
-	var $flist_frame = $flist.parent()
-	  , $flist_search = $('#file-list-search')
-
 	var CURRENT_FILE = null
+	var router = init_routing()
 
 
 	// App
-
-	var router = init_routing()
 
 	$(function() {
 	  load_config()
@@ -105,28 +88,27 @@
 	  listen_for_scroll()
 	  listen_for_input()
 
-	  init_key_shortcuts()
-	  init_file_search()
-	  help.init($ed, $preview)
+	  keys.init()
+	  help.init(d.ed, d.preview)
 	})
 
 
 	// Private Helpers
 
 	var highlight = throttle(function() {
-	  $preview.find('pre code').each(function(i, block) {
+	  d.preview.find('pre code').each(function(i, block) {
 	    hljs.highlightBlock(block)
 	  })
 	}, 2000)
 
 	function render(md) {
-	  md || (md = $ed.val())
-	  $md.html(marked(md))
+	  md || (md = d.ed.val())
+	  d.md.html(marked(md))
 	  highlight()
 	}
 
 	function save_file(cb) {
-	  var md = $ed.val()
+	  var md = d.ed.val()
 	  if ('function' != typeof cb) cb = undefined;
 	  storage.files(CURRENT_FILE, md, cb)
 	  return md
@@ -172,165 +154,89 @@
 	}
 
 	function init_editor() {
-	  $ed.tabby({tabString: '    '})
-	}
-
-	function init_key_shortcuts() {
-	  key.filter = function(){ return true }
-
-	  key('command+s, ctrl+s', function() {
-	    if (!CURRENT_FILE || (CURRENT_FILE == cfg.default_filename)) {
-	      // save as a named file
-	      var file_name = prompt('Name this file:')
-	      if (file_name) {
-	        CURRENT_FILE = file_name
-	        save_file(function(){ router.setRoute('/'+file_name) })
-	        storage.files(cfg.default_filename, '')
-	      }
-	    } else {
-	      // placebo
-	      var delay = 210
-	        , old = document.title
-
-	      document.title = '✔ Saved'
-	      setTimeout(function(){ document.title = '✔ ' },       delay)
-	      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 2)
-	      setTimeout(function(){ document.title = '✔ ' },       delay * 3)
-	      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 4)
-	      setTimeout(function(){ document.title = old},         delay * 9)
-	    }
-
-	    return false
-	  })
-
-	  key('ctrl+=', function() {
-	    storage.config('sync-scroll', function(current) {
-	      cfg.sync_scroll = !current
-	      storage.config('sync-scroll', !current)
-	    })
-	  })
-
-	  key('ctrl+p', function() {
-	    storage.files.store.keys(function(e, ks) {
-	      if (e) throw e;
-
-	      key.setScope('file-list')
-	      $flist_frame.show()
-
-	      populate_file_list(ks)
-
-	      $flist_search.focus()
-	    })
-
-	    return false
-	  })
-
-	  key('escape', 'file-list', function() {
-	    $flist_frame.hide()
-	    key.setScope(null)
-	    return false
-	  })
-	}
-
-	function init_file_search() {
-	  search.init()
-	  listen_for_search()
+	  d.ed.tabby({tabString: '    '})
 	}
 
 	function load_config() {
-	  storage.config('editor-css', into($ed, 'css', {default: {}}))
-	  storage.config('preview-css', into($preview, 'css', {default: {}}))
+	  storage.config('editor-css', into(d.ed, 'css', {default: {}}))
+	  storage.config('preview-css', into(d.preview, 'css', {default: {}}))
 	  storage.config('sync-scroll', into(cfg, 'sync_scroll', {assign:true, default:true}))
 
 	  storage.config('rs-position', position_divider)
 	}
 
 	function load_file() {
-	  storage.files(CURRENT_FILE, flow(into($ed, 'val'), render))
+	  storage.files(CURRENT_FILE, flow(into(d.ed, 'val'), render))
 	}
 
 	function listen_for_resize() {
 	  var $doc = $(document)
 	    , $bod = $('body')
 
-	  $rs.on('dragstart.resize', function() { 
+	  d.rs.on('dragstart.resize', function() { 
 	    var ww = window.innerWidth
 
-	    $ed.css({"user-select": "none"})
-	    $preview.css({"user-select": "none"})
-	    $rs.css({opacity:0})
+	    d.ed.css({"user-select": "none"})
+	    d.preview.css({"user-select": "none"})
+	    d.rs.css({opacity:0})
 
 	    $doc.on('drop.resizing', function(e) { 
 	      e.preventDefault()
 
-	      $rs.css({left: e.pageX})
+	      d.rs.css({left: e.pageX})
 	      $bod.removeClass('resizing')
 
-	      $ed.css({"user-select": ""})
-	      $preview.css({"user-select": ""})
-	      $rs.css({opacity:''})
+	      d.ed.css({"user-select": ""})
+	      d.preview.css({"user-select": ""})
+	      d.rs.css({opacity:''})
 
 	      $doc.off('.resizing')
-	      $rs.off('.resizing')
+	      d.rs.off('.resizing')
 
 	      storage.config('rs-position', e.pageX)
 	    })
 
-	    $rs.on('drag.resizing', function (e) {
+	    d.rs.on('drag.resizing', function (e) {
 	      resize_frames(e.pageX, ww)
 	    })
 	  })
 	}
 
 	function listen_for_scroll() {
-	  $ed.on('scroll.markula', function() {
-	    sync_scroll($(this), $preview)
+	  d.ed.on('scroll.markula', function() {
+	    sync_scroll($(this), d.preview)
 	  })
 
-	  $preview.on('scroll.markula', function() {
-	    sync_scroll($(this), $ed)
+	  d.preview.on('scroll.markula', function() {
+	    sync_scroll($(this), d.ed)
 	  })
 	}
 
 	function listen_for_input() {
 	  var _render = render.bind(null,null)
-	  $ed.on('input', throttle(flow(_render, save_file), 20))
-	}
-
-	function listen_for_search() {
-	  $flist_search.on('input', function() {
-	    var q = $flist_search.val()
-	    populate_file_list(search.search(q))
-	  })
+	  d.ed.on('input', throttle(flow(_render, save_file), 20))
 	}
 
 
 	function handle_route(file_id) {
 	  file_id == null && (file_id = cfg.default_filename)
 
-	  $flist_frame.hide()
-	  $flist_search.val('')
+	  d.flist_frame.hide()
+	  d.flist_search.val('')
 
 	  CURRENT_FILE = file_id
 	  document.title = '✎ ' + file_id + '.md'
 	  load_file()
 
-	  $ed.focus()
-	}
-
-	function populate_file_list(ks) {
-	  $flist.empty()
-	  ks.forEach(function(k) {
-	    $flist.append('<li><a href="#/'+k+'">'+k+'</li>')
-	  })
+	  d.ed.focus()
 	}
 
 	function position_divider(xpx) {
 	  if (xpx == undefined) return;
 	  var ww = window.innerWidth
 	  resize_frames(xpx, ww)
-	  $rs.css({left: xpx})
-	  $bod.removeClass('resizing')
+	  d.rs.css({left: xpx})
+	  d.bod.removeClass('resizing')
 	}
 
 	function resize_frames(xpx, ww) {
@@ -339,8 +245,8 @@
 	  var x = (xpx / ww) * 100
 	    , xx = (100 - x)
 
-	  $eframe.css({width: x+'%'})
-	  $preview.css({left:x+'%', width:xx+'%'})
+	  d.eframe.css({width: x+'%'})
+	  d.preview.css({left:x+'%', width:xx+'%'})
 	}
 
 	function into(obj, k, opts) {
@@ -1536,739 +1442,9 @@
 /* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	
-
-	//
-	// Generated on Tue Dec 16 2014 12:13:47 GMT+0100 (CET) by Charlie Robbins, Paolo Fragomeni & the Contributors (Using Codesurgeon).
-	// Version 1.2.6
-	//
-
-	(function (exports) {
-
-	/*
-	 * browser.js: Browser specific functionality for director.
-	 *
-	 * (C) 2011, Charlie Robbins, Paolo Fragomeni, & the Contributors.
-	 * MIT LICENSE
-	 *
-	 */
-
-	var dloc = document.location;
-
-	function dlocHashEmpty() {
-	  // Non-IE browsers return '' when the address bar shows '#'; Director's logic
-	  // assumes both mean empty.
-	  return dloc.hash === '' || dloc.hash === '#';
-	}
-
-	var listener = {
-	  mode: 'modern',
-	  hash: dloc.hash,
-	  history: false,
-
-	  check: function () {
-	    var h = dloc.hash;
-	    if (h != this.hash) {
-	      this.hash = h;
-	      this.onHashChanged();
-	    }
-	  },
-
-	  fire: function () {
-	    if (this.mode === 'modern') {
-	      this.history === true ? window.onpopstate() : window.onhashchange();
-	    }
-	    else {
-	      this.onHashChanged();
-	    }
-	  },
-
-	  init: function (fn, history) {
-	    var self = this;
-	    this.history = history;
-
-	    if (!Router.listeners) {
-	      Router.listeners = [];
-	    }
-
-	    function onchange(onChangeEvent) {
-	      for (var i = 0, l = Router.listeners.length; i < l; i++) {
-	        Router.listeners[i](onChangeEvent);
-	      }
-	    }
-
-	    //note IE8 is being counted as 'modern' because it has the hashchange event
-	    if ('onhashchange' in window && (document.documentMode === undefined
-	      || document.documentMode > 7)) {
-	      // At least for now HTML5 history is available for 'modern' browsers only
-	      if (this.history === true) {
-	        // There is an old bug in Chrome that causes onpopstate to fire even
-	        // upon initial page load. Since the handler is run manually in init(),
-	        // this would cause Chrome to run it twise. Currently the only
-	        // workaround seems to be to set the handler after the initial page load
-	        // http://code.google.com/p/chromium/issues/detail?id=63040
-	        setTimeout(function() {
-	          window.onpopstate = onchange;
-	        }, 500);
-	      }
-	      else {
-	        window.onhashchange = onchange;
-	      }
-	      this.mode = 'modern';
-	    }
-	    else {
-	      //
-	      // IE support, based on a concept by Erik Arvidson ...
-	      //
-	      var frame = document.createElement('iframe');
-	      frame.id = 'state-frame';
-	      frame.style.display = 'none';
-	      document.body.appendChild(frame);
-	      this.writeFrame('');
-
-	      if ('onpropertychange' in document && 'attachEvent' in document) {
-	        document.attachEvent('onpropertychange', function () {
-	          if (event.propertyName === 'location') {
-	            self.check();
-	          }
-	        });
-	      }
-
-	      window.setInterval(function () { self.check(); }, 50);
-
-	      this.onHashChanged = onchange;
-	      this.mode = 'legacy';
-	    }
-
-	    Router.listeners.push(fn);
-
-	    return this.mode;
-	  },
-
-	  destroy: function (fn) {
-	    if (!Router || !Router.listeners) {
-	      return;
-	    }
-
-	    var listeners = Router.listeners;
-
-	    for (var i = listeners.length - 1; i >= 0; i--) {
-	      if (listeners[i] === fn) {
-	        listeners.splice(i, 1);
-	      }
-	    }
-	  },
-
-	  setHash: function (s) {
-	    // Mozilla always adds an entry to the history
-	    if (this.mode === 'legacy') {
-	      this.writeFrame(s);
-	    }
-
-	    if (this.history === true) {
-	      window.history.pushState({}, document.title, s);
-	      // Fire an onpopstate event manually since pushing does not obviously
-	      // trigger the pop event.
-	      this.fire();
-	    } else {
-	      dloc.hash = (s[0] === '/') ? s : '/' + s;
-	    }
-	    return this;
-	  },
-
-	  writeFrame: function (s) {
-	    // IE support...
-	    var f = document.getElementById('state-frame');
-	    var d = f.contentDocument || f.contentWindow.document;
-	    d.open();
-	    d.write("<script>_hash = '" + s + "'; onload = parent.listener.syncHash;<script>");
-	    d.close();
-	  },
-
-	  syncHash: function () {
-	    // IE support...
-	    var s = this._hash;
-	    if (s != dloc.hash) {
-	      dloc.hash = s;
-	    }
-	    return this;
-	  },
-
-	  onHashChanged: function () {}
-	};
-
-	var Router = exports.Router = function (routes) {
-	  if (!(this instanceof Router)) return new Router(routes);
-
-	  this.params   = {};
-	  this.routes   = {};
-	  this.methods  = ['on', 'once', 'after', 'before'];
-	  this.scope    = [];
-	  this._methods = {};
-
-	  this._insert = this.insert;
-	  this.insert = this.insertEx;
-
-	  this.historySupport = (window.history != null ? window.history.pushState : null) != null
-
-	  this.configure();
-	  this.mount(routes || {});
-	};
-
-	Router.prototype.init = function (r) {
-	  var self = this
-	    , routeTo;
-	  this.handler = function(onChangeEvent) {
-	    var newURL = onChangeEvent && onChangeEvent.newURL || window.location.hash;
-	    var url = self.history === true ? self.getPath() : newURL.replace(/.*#/, '');
-	    self.dispatch('on', url.charAt(0) === '/' ? url : '/' + url);
-	  };
-
-	  listener.init(this.handler, this.history);
-
-	  if (this.history === false) {
-	    if (dlocHashEmpty() && r) {
-	      dloc.hash = r;
-	    } else if (!dlocHashEmpty()) {
-	      self.dispatch('on', '/' + dloc.hash.replace(/^(#\/|#|\/)/, ''));
-	    }
-	  }
-	  else {
-	    if (this.convert_hash_in_init) {
-	      // Use hash as route
-	      routeTo = dlocHashEmpty() && r ? r : !dlocHashEmpty() ? dloc.hash.replace(/^#/, '') : null;
-	      if (routeTo) {
-	        window.history.replaceState({}, document.title, routeTo);
-	      }
-	    }
-	    else {
-	      // Use canonical url
-	      routeTo = this.getPath();
-	    }
-
-	    // Router has been initialized, but due to the chrome bug it will not
-	    // yet actually route HTML5 history state changes. Thus, decide if should route.
-	    if (routeTo || this.run_in_init === true) {
-	      this.handler();
-	    }
-	  }
-
-	  return this;
-	};
-
-	Router.prototype.explode = function () {
-	  var v = this.history === true ? this.getPath() : dloc.hash;
-	  if (v.charAt(1) === '/') { v=v.slice(1) }
-	  return v.slice(1, v.length).split("/");
-	};
-
-	Router.prototype.setRoute = function (i, v, val) {
-	  var url = this.explode();
-
-	  if (typeof i === 'number' && typeof v === 'string') {
-	    url[i] = v;
-	  }
-	  else if (typeof val === 'string') {
-	    url.splice(i, v, s);
-	  }
-	  else {
-	    url = [i];
-	  }
-
-	  listener.setHash(url.join('/'));
-	  return url;
-	};
-
-	//
-	// ### function insertEx(method, path, route, parent)
-	// #### @method {string} Method to insert the specific `route`.
-	// #### @path {Array} Parsed path to insert the `route` at.
-	// #### @route {Array|function} Route handlers to insert.
-	// #### @parent {Object} **Optional** Parent "routes" to insert into.
-	// insert a callback that will only occur once per the matched route.
-	//
-	Router.prototype.insertEx = function(method, path, route, parent) {
-	  if (method === "once") {
-	    method = "on";
-	    route = function(route) {
-	      var once = false;
-	      return function() {
-	        if (once) return;
-	        once = true;
-	        return route.apply(this, arguments);
-	      };
-	    }(route);
-	  }
-	  return this._insert(method, path, route, parent);
-	};
-
-	Router.prototype.getRoute = function (v) {
-	  var ret = v;
-
-	  if (typeof v === "number") {
-	    ret = this.explode()[v];
-	  }
-	  else if (typeof v === "string"){
-	    var h = this.explode();
-	    ret = h.indexOf(v);
-	  }
-	  else {
-	    ret = this.explode();
-	  }
-
-	  return ret;
-	};
-
-	Router.prototype.destroy = function () {
-	  listener.destroy(this.handler);
-	  return this;
-	};
-
-	Router.prototype.getPath = function () {
-	  var path = window.location.pathname;
-	  if (path.substr(0, 1) !== '/') {
-	    path = '/' + path;
-	  }
-	  return path;
-	};
-	function _every(arr, iterator) {
-	  for (var i = 0; i < arr.length; i += 1) {
-	    if (iterator(arr[i], i, arr) === false) {
-	      return;
-	    }
-	  }
-	}
-
-	function _flatten(arr) {
-	  var flat = [];
-	  for (var i = 0, n = arr.length; i < n; i++) {
-	    flat = flat.concat(arr[i]);
-	  }
-	  return flat;
-	}
-
-	function _asyncEverySeries(arr, iterator, callback) {
-	  if (!arr.length) {
-	    return callback();
-	  }
-	  var completed = 0;
-	  (function iterate() {
-	    iterator(arr[completed], function(err) {
-	      if (err || err === false) {
-	        callback(err);
-	        callback = function() {};
-	      } else {
-	        completed += 1;
-	        if (completed === arr.length) {
-	          callback();
-	        } else {
-	          iterate();
-	        }
-	      }
-	    });
-	  })();
-	}
-
-	function paramifyString(str, params, mod) {
-	  mod = str;
-	  for (var param in params) {
-	    if (params.hasOwnProperty(param)) {
-	      mod = params[param](str);
-	      if (mod !== str) {
-	        break;
-	      }
-	    }
-	  }
-	  return mod === str ? "([._a-zA-Z0-9-%()]+)" : mod;
-	}
-
-	function regifyString(str, params) {
-	  var matches, last = 0, out = "";
-	  while (matches = str.substr(last).match(/[^\w\d\- %@&]*\*[^\w\d\- %@&]*/)) {
-	    last = matches.index + matches[0].length;
-	    matches[0] = matches[0].replace(/^\*/, "([_.()!\\ %@&a-zA-Z0-9-]+)");
-	    out += str.substr(0, matches.index) + matches[0];
-	  }
-	  str = out += str.substr(last);
-	  var captures = str.match(/:([^\/]+)/ig), capture, length;
-	  if (captures) {
-	    length = captures.length;
-	    for (var i = 0; i < length; i++) {
-	      capture = captures[i];
-	      if (capture.slice(0, 2) === "::") {
-	        str = capture.slice(1);
-	      } else {
-	        str = str.replace(capture, paramifyString(capture, params));
-	      }
-	    }
-	  }
-	  return str;
-	}
-
-	function terminator(routes, delimiter, start, stop) {
-	  var last = 0, left = 0, right = 0, start = (start || "(").toString(), stop = (stop || ")").toString(), i;
-	  for (i = 0; i < routes.length; i++) {
-	    var chunk = routes[i];
-	    if (chunk.indexOf(start, last) > chunk.indexOf(stop, last) || ~chunk.indexOf(start, last) && !~chunk.indexOf(stop, last) || !~chunk.indexOf(start, last) && ~chunk.indexOf(stop, last)) {
-	      left = chunk.indexOf(start, last);
-	      right = chunk.indexOf(stop, last);
-	      if (~left && !~right || !~left && ~right) {
-	        var tmp = routes.slice(0, (i || 1) + 1).join(delimiter);
-	        routes = [ tmp ].concat(routes.slice((i || 1) + 1));
-	      }
-	      last = (right > left ? right : left) + 1;
-	      i = 0;
-	    } else {
-	      last = 0;
-	    }
-	  }
-	  return routes;
-	}
-
-	var QUERY_SEPARATOR = /\?.*/;
-
-	Router.prototype.configure = function(options) {
-	  options = options || {};
-	  for (var i = 0; i < this.methods.length; i++) {
-	    this._methods[this.methods[i]] = true;
-	  }
-	  this.recurse = options.recurse || this.recurse || false;
-	  this.async = options.async || false;
-	  this.delimiter = options.delimiter || "/";
-	  this.strict = typeof options.strict === "undefined" ? true : options.strict;
-	  this.notfound = options.notfound;
-	  this.resource = options.resource;
-	  this.history = options.html5history && this.historySupport || false;
-	  this.run_in_init = this.history === true && options.run_handler_in_init !== false;
-	  this.convert_hash_in_init = this.history === true && options.convert_hash_in_init !== false;
-	  this.every = {
-	    after: options.after || null,
-	    before: options.before || null,
-	    on: options.on || null
-	  };
-	  return this;
-	};
-
-	Router.prototype.param = function(token, matcher) {
-	  if (token[0] !== ":") {
-	    token = ":" + token;
-	  }
-	  var compiled = new RegExp(token, "g");
-	  this.params[token] = function(str) {
-	    return str.replace(compiled, matcher.source || matcher);
-	  };
-	  return this;
-	};
-
-	Router.prototype.on = Router.prototype.route = function(method, path, route) {
-	  var self = this;
-	  if (!route && typeof path == "function") {
-	    route = path;
-	    path = method;
-	    method = "on";
-	  }
-	  if (Array.isArray(path)) {
-	    return path.forEach(function(p) {
-	      self.on(method, p, route);
-	    });
-	  }
-	  if (path.source) {
-	    path = path.source.replace(/\\\//ig, "/");
-	  }
-	  if (Array.isArray(method)) {
-	    return method.forEach(function(m) {
-	      self.on(m.toLowerCase(), path, route);
-	    });
-	  }
-	  path = path.split(new RegExp(this.delimiter));
-	  path = terminator(path, this.delimiter);
-	  this.insert(method, this.scope.concat(path), route);
-	};
-
-	Router.prototype.path = function(path, routesFn) {
-	  var self = this, length = this.scope.length;
-	  if (path.source) {
-	    path = path.source.replace(/\\\//ig, "/");
-	  }
-	  path = path.split(new RegExp(this.delimiter));
-	  path = terminator(path, this.delimiter);
-	  this.scope = this.scope.concat(path);
-	  routesFn.call(this, this);
-	  this.scope.splice(length, path.length);
-	};
-
-	Router.prototype.dispatch = function(method, path, callback) {
-	  var self = this, fns = this.traverse(method, path.replace(QUERY_SEPARATOR, ""), this.routes, ""), invoked = this._invoked, after;
-	  this._invoked = true;
-	  if (!fns || fns.length === 0) {
-	    this.last = [];
-	    if (typeof this.notfound === "function") {
-	      this.invoke([ this.notfound ], {
-	        method: method,
-	        path: path
-	      }, callback);
-	    }
-	    return false;
-	  }
-	  if (this.recurse === "forward") {
-	    fns = fns.reverse();
-	  }
-	  function updateAndInvoke() {
-	    self.last = fns.after;
-	    self.invoke(self.runlist(fns), self, callback);
-	  }
-	  after = this.every && this.every.after ? [ this.every.after ].concat(this.last) : [ this.last ];
-	  if (after && after.length > 0 && invoked) {
-	    if (this.async) {
-	      this.invoke(after, this, updateAndInvoke);
-	    } else {
-	      this.invoke(after, this);
-	      updateAndInvoke();
-	    }
-	    return true;
-	  }
-	  updateAndInvoke();
-	  return true;
-	};
-
-	Router.prototype.invoke = function(fns, thisArg, callback) {
-	  var self = this;
-	  var apply;
-	  if (this.async) {
-	    apply = function(fn, next) {
-	      if (Array.isArray(fn)) {
-	        return _asyncEverySeries(fn, apply, next);
-	      } else if (typeof fn == "function") {
-	        fn.apply(thisArg, (fns.captures || []).concat(next));
-	      }
-	    };
-	    _asyncEverySeries(fns, apply, function() {
-	      if (callback) {
-	        callback.apply(thisArg, arguments);
-	      }
-	    });
-	  } else {
-	    apply = function(fn) {
-	      if (Array.isArray(fn)) {
-	        return _every(fn, apply);
-	      } else if (typeof fn === "function") {
-	        return fn.apply(thisArg, fns.captures || []);
-	      } else if (typeof fn === "string" && self.resource) {
-	        self.resource[fn].apply(thisArg, fns.captures || []);
-	      }
-	    };
-	    _every(fns, apply);
-	  }
-	};
-
-	Router.prototype.traverse = function(method, path, routes, regexp, filter) {
-	  var fns = [], current, exact, match, next, that;
-	  function filterRoutes(routes) {
-	    if (!filter) {
-	      return routes;
-	    }
-	    function deepCopy(source) {
-	      var result = [];
-	      for (var i = 0; i < source.length; i++) {
-	        result[i] = Array.isArray(source[i]) ? deepCopy(source[i]) : source[i];
-	      }
-	      return result;
-	    }
-	    function applyFilter(fns) {
-	      for (var i = fns.length - 1; i >= 0; i--) {
-	        if (Array.isArray(fns[i])) {
-	          applyFilter(fns[i]);
-	          if (fns[i].length === 0) {
-	            fns.splice(i, 1);
-	          }
-	        } else {
-	          if (!filter(fns[i])) {
-	            fns.splice(i, 1);
-	          }
-	        }
-	      }
-	    }
-	    var newRoutes = deepCopy(routes);
-	    newRoutes.matched = routes.matched;
-	    newRoutes.captures = routes.captures;
-	    newRoutes.after = routes.after.filter(filter);
-	    applyFilter(newRoutes);
-	    return newRoutes;
-	  }
-	  if (path === this.delimiter && routes[method]) {
-	    next = [ [ routes.before, routes[method] ].filter(Boolean) ];
-	    next.after = [ routes.after ].filter(Boolean);
-	    next.matched = true;
-	    next.captures = [];
-	    return filterRoutes(next);
-	  }
-	  for (var r in routes) {
-	    if (routes.hasOwnProperty(r) && (!this._methods[r] || this._methods[r] && typeof routes[r] === "object" && !Array.isArray(routes[r]))) {
-	      current = exact = regexp + this.delimiter + r;
-	      if (!this.strict) {
-	        exact += "[" + this.delimiter + "]?";
-	      }
-	      match = path.match(new RegExp("^" + exact));
-	      if (!match) {
-	        continue;
-	      }
-	      if (match[0] && match[0] == path && routes[r][method]) {
-	        next = [ [ routes[r].before, routes[r][method] ].filter(Boolean) ];
-	        next.after = [ routes[r].after ].filter(Boolean);
-	        next.matched = true;
-	        next.captures = match.slice(1);
-	        if (this.recurse && routes === this.routes) {
-	          next.push([ routes.before, routes.on ].filter(Boolean));
-	          next.after = next.after.concat([ routes.after ].filter(Boolean));
-	        }
-	        return filterRoutes(next);
-	      }
-	      next = this.traverse(method, path, routes[r], current);
-	      if (next.matched) {
-	        if (next.length > 0) {
-	          fns = fns.concat(next);
-	        }
-	        if (this.recurse) {
-	          fns.push([ routes[r].before, routes[r].on ].filter(Boolean));
-	          next.after = next.after.concat([ routes[r].after ].filter(Boolean));
-	          if (routes === this.routes) {
-	            fns.push([ routes["before"], routes["on"] ].filter(Boolean));
-	            next.after = next.after.concat([ routes["after"] ].filter(Boolean));
-	          }
-	        }
-	        fns.matched = true;
-	        fns.captures = next.captures;
-	        fns.after = next.after;
-	        return filterRoutes(fns);
-	      }
-	    }
-	  }
-	  return false;
-	};
-
-	Router.prototype.insert = function(method, path, route, parent) {
-	  var methodType, parentType, isArray, nested, part;
-	  path = path.filter(function(p) {
-	    return p && p.length > 0;
-	  });
-	  parent = parent || this.routes;
-	  part = path.shift();
-	  if (/\:|\*/.test(part) && !/\\d|\\w/.test(part)) {
-	    part = regifyString(part, this.params);
-	  }
-	  if (path.length > 0) {
-	    parent[part] = parent[part] || {};
-	    return this.insert(method, path, route, parent[part]);
-	  }
-	  if (!part && !path.length && parent === this.routes) {
-	    methodType = typeof parent[method];
-	    switch (methodType) {
-	     case "function":
-	      parent[method] = [ parent[method], route ];
-	      return;
-	     case "object":
-	      parent[method].push(route);
-	      return;
-	     case "undefined":
-	      parent[method] = route;
-	      return;
-	    }
-	    return;
-	  }
-	  parentType = typeof parent[part];
-	  isArray = Array.isArray(parent[part]);
-	  if (parent[part] && !isArray && parentType == "object") {
-	    methodType = typeof parent[part][method];
-	    switch (methodType) {
-	     case "function":
-	      parent[part][method] = [ parent[part][method], route ];
-	      return;
-	     case "object":
-	      parent[part][method].push(route);
-	      return;
-	     case "undefined":
-	      parent[part][method] = route;
-	      return;
-	    }
-	  } else if (parentType == "undefined") {
-	    nested = {};
-	    nested[method] = route;
-	    parent[part] = nested;
-	    return;
-	  }
-	  throw new Error("Invalid route context: " + parentType);
-	};
-
-
-
-	Router.prototype.extend = function(methods) {
-	  var self = this, len = methods.length, i;
-	  function extend(method) {
-	    self._methods[method] = true;
-	    self[method] = function() {
-	      var extra = arguments.length === 1 ? [ method, "" ] : [ method ];
-	      self.on.apply(self, extra.concat(Array.prototype.slice.call(arguments)));
-	    };
-	  }
-	  for (i = 0; i < len; i++) {
-	    extend(methods[i]);
-	  }
-	};
-
-	Router.prototype.runlist = function(fns) {
-	  var runlist = this.every && this.every.before ? [ this.every.before ].concat(_flatten(fns)) : _flatten(fns);
-	  if (this.every && this.every.on) {
-	    runlist.push(this.every.on);
-	  }
-	  runlist.captures = fns.captures;
-	  runlist.source = fns.source;
-	  return runlist;
-	};
-
-	Router.prototype.mount = function(routes, path) {
-	  if (!routes || typeof routes !== "object" || Array.isArray(routes)) {
-	    return;
-	  }
-	  var self = this;
-	  path = path || [];
-	  if (!Array.isArray(path)) {
-	    path = path.split(self.delimiter);
-	  }
-	  function insertOrMount(route, local) {
-	    var rename = route, parts = route.split(self.delimiter), routeType = typeof routes[route], isRoute = parts[0] === "" || !self._methods[parts[0]], event = isRoute ? "on" : rename;
-	    if (isRoute) {
-	      rename = rename.slice((rename.match(new RegExp("^" + self.delimiter)) || [ "" ])[0].length);
-	      parts.shift();
-	    }
-	    if (isRoute && routeType === "object" && !Array.isArray(routes[route])) {
-	      local = local.concat(parts);
-	      self.mount(routes[route], local);
-	      return;
-	    }
-	    if (isRoute) {
-	      local = local.concat(rename.split(self.delimiter));
-	      local = terminator(local, self.delimiter);
-	    }
-	    self.insert(event, local, routes[route]);
-	  }
-	  for (var route in routes) {
-	    if (routes.hasOwnProperty(route)) {
-	      insertOrMount(route, path.slice(0));
-	    }
-	  }
-	};
-
-
-
-	}( true ? exports : window));
-
-/***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
 	// Libraries
-	var storage = __webpack_require__(15)
-	  , project_name = __webpack_require__(17).name
+	var storage = __webpack_require__(14)
+	  , project_name = __webpack_require__(16).name
 
 
 
@@ -2324,7 +1500,7 @@
 
 
 /***/ },
-/* 15 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var require;/* WEBPACK VAR INJECTION */(function(global, process) {/*!
@@ -5108,10 +4284,10 @@
 	/******/ ])
 	});
 	;
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(16)))
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(15)))
 
 /***/ },
-/* 16 */
+/* 15 */
 /***/ function(module, exports) {
 
 	// shim for using process in browser
@@ -5208,7 +4384,7 @@
 
 
 /***/ },
-/* 17 */
+/* 16 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -5242,6 +4418,736 @@
 		"author": "Juan Patten (jr@rafflecopter.com)",
 		"license": "MIT"
 	};
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+
+	//
+	// Generated on Tue Dec 16 2014 12:13:47 GMT+0100 (CET) by Charlie Robbins, Paolo Fragomeni & the Contributors (Using Codesurgeon).
+	// Version 1.2.6
+	//
+
+	(function (exports) {
+
+	/*
+	 * browser.js: Browser specific functionality for director.
+	 *
+	 * (C) 2011, Charlie Robbins, Paolo Fragomeni, & the Contributors.
+	 * MIT LICENSE
+	 *
+	 */
+
+	var dloc = document.location;
+
+	function dlocHashEmpty() {
+	  // Non-IE browsers return '' when the address bar shows '#'; Director's logic
+	  // assumes both mean empty.
+	  return dloc.hash === '' || dloc.hash === '#';
+	}
+
+	var listener = {
+	  mode: 'modern',
+	  hash: dloc.hash,
+	  history: false,
+
+	  check: function () {
+	    var h = dloc.hash;
+	    if (h != this.hash) {
+	      this.hash = h;
+	      this.onHashChanged();
+	    }
+	  },
+
+	  fire: function () {
+	    if (this.mode === 'modern') {
+	      this.history === true ? window.onpopstate() : window.onhashchange();
+	    }
+	    else {
+	      this.onHashChanged();
+	    }
+	  },
+
+	  init: function (fn, history) {
+	    var self = this;
+	    this.history = history;
+
+	    if (!Router.listeners) {
+	      Router.listeners = [];
+	    }
+
+	    function onchange(onChangeEvent) {
+	      for (var i = 0, l = Router.listeners.length; i < l; i++) {
+	        Router.listeners[i](onChangeEvent);
+	      }
+	    }
+
+	    //note IE8 is being counted as 'modern' because it has the hashchange event
+	    if ('onhashchange' in window && (document.documentMode === undefined
+	      || document.documentMode > 7)) {
+	      // At least for now HTML5 history is available for 'modern' browsers only
+	      if (this.history === true) {
+	        // There is an old bug in Chrome that causes onpopstate to fire even
+	        // upon initial page load. Since the handler is run manually in init(),
+	        // this would cause Chrome to run it twise. Currently the only
+	        // workaround seems to be to set the handler after the initial page load
+	        // http://code.google.com/p/chromium/issues/detail?id=63040
+	        setTimeout(function() {
+	          window.onpopstate = onchange;
+	        }, 500);
+	      }
+	      else {
+	        window.onhashchange = onchange;
+	      }
+	      this.mode = 'modern';
+	    }
+	    else {
+	      //
+	      // IE support, based on a concept by Erik Arvidson ...
+	      //
+	      var frame = document.createElement('iframe');
+	      frame.id = 'state-frame';
+	      frame.style.display = 'none';
+	      document.body.appendChild(frame);
+	      this.writeFrame('');
+
+	      if ('onpropertychange' in document && 'attachEvent' in document) {
+	        document.attachEvent('onpropertychange', function () {
+	          if (event.propertyName === 'location') {
+	            self.check();
+	          }
+	        });
+	      }
+
+	      window.setInterval(function () { self.check(); }, 50);
+
+	      this.onHashChanged = onchange;
+	      this.mode = 'legacy';
+	    }
+
+	    Router.listeners.push(fn);
+
+	    return this.mode;
+	  },
+
+	  destroy: function (fn) {
+	    if (!Router || !Router.listeners) {
+	      return;
+	    }
+
+	    var listeners = Router.listeners;
+
+	    for (var i = listeners.length - 1; i >= 0; i--) {
+	      if (listeners[i] === fn) {
+	        listeners.splice(i, 1);
+	      }
+	    }
+	  },
+
+	  setHash: function (s) {
+	    // Mozilla always adds an entry to the history
+	    if (this.mode === 'legacy') {
+	      this.writeFrame(s);
+	    }
+
+	    if (this.history === true) {
+	      window.history.pushState({}, document.title, s);
+	      // Fire an onpopstate event manually since pushing does not obviously
+	      // trigger the pop event.
+	      this.fire();
+	    } else {
+	      dloc.hash = (s[0] === '/') ? s : '/' + s;
+	    }
+	    return this;
+	  },
+
+	  writeFrame: function (s) {
+	    // IE support...
+	    var f = document.getElementById('state-frame');
+	    var d = f.contentDocument || f.contentWindow.document;
+	    d.open();
+	    d.write("<script>_hash = '" + s + "'; onload = parent.listener.syncHash;<script>");
+	    d.close();
+	  },
+
+	  syncHash: function () {
+	    // IE support...
+	    var s = this._hash;
+	    if (s != dloc.hash) {
+	      dloc.hash = s;
+	    }
+	    return this;
+	  },
+
+	  onHashChanged: function () {}
+	};
+
+	var Router = exports.Router = function (routes) {
+	  if (!(this instanceof Router)) return new Router(routes);
+
+	  this.params   = {};
+	  this.routes   = {};
+	  this.methods  = ['on', 'once', 'after', 'before'];
+	  this.scope    = [];
+	  this._methods = {};
+
+	  this._insert = this.insert;
+	  this.insert = this.insertEx;
+
+	  this.historySupport = (window.history != null ? window.history.pushState : null) != null
+
+	  this.configure();
+	  this.mount(routes || {});
+	};
+
+	Router.prototype.init = function (r) {
+	  var self = this
+	    , routeTo;
+	  this.handler = function(onChangeEvent) {
+	    var newURL = onChangeEvent && onChangeEvent.newURL || window.location.hash;
+	    var url = self.history === true ? self.getPath() : newURL.replace(/.*#/, '');
+	    self.dispatch('on', url.charAt(0) === '/' ? url : '/' + url);
+	  };
+
+	  listener.init(this.handler, this.history);
+
+	  if (this.history === false) {
+	    if (dlocHashEmpty() && r) {
+	      dloc.hash = r;
+	    } else if (!dlocHashEmpty()) {
+	      self.dispatch('on', '/' + dloc.hash.replace(/^(#\/|#|\/)/, ''));
+	    }
+	  }
+	  else {
+	    if (this.convert_hash_in_init) {
+	      // Use hash as route
+	      routeTo = dlocHashEmpty() && r ? r : !dlocHashEmpty() ? dloc.hash.replace(/^#/, '') : null;
+	      if (routeTo) {
+	        window.history.replaceState({}, document.title, routeTo);
+	      }
+	    }
+	    else {
+	      // Use canonical url
+	      routeTo = this.getPath();
+	    }
+
+	    // Router has been initialized, but due to the chrome bug it will not
+	    // yet actually route HTML5 history state changes. Thus, decide if should route.
+	    if (routeTo || this.run_in_init === true) {
+	      this.handler();
+	    }
+	  }
+
+	  return this;
+	};
+
+	Router.prototype.explode = function () {
+	  var v = this.history === true ? this.getPath() : dloc.hash;
+	  if (v.charAt(1) === '/') { v=v.slice(1) }
+	  return v.slice(1, v.length).split("/");
+	};
+
+	Router.prototype.setRoute = function (i, v, val) {
+	  var url = this.explode();
+
+	  if (typeof i === 'number' && typeof v === 'string') {
+	    url[i] = v;
+	  }
+	  else if (typeof val === 'string') {
+	    url.splice(i, v, s);
+	  }
+	  else {
+	    url = [i];
+	  }
+
+	  listener.setHash(url.join('/'));
+	  return url;
+	};
+
+	//
+	// ### function insertEx(method, path, route, parent)
+	// #### @method {string} Method to insert the specific `route`.
+	// #### @path {Array} Parsed path to insert the `route` at.
+	// #### @route {Array|function} Route handlers to insert.
+	// #### @parent {Object} **Optional** Parent "routes" to insert into.
+	// insert a callback that will only occur once per the matched route.
+	//
+	Router.prototype.insertEx = function(method, path, route, parent) {
+	  if (method === "once") {
+	    method = "on";
+	    route = function(route) {
+	      var once = false;
+	      return function() {
+	        if (once) return;
+	        once = true;
+	        return route.apply(this, arguments);
+	      };
+	    }(route);
+	  }
+	  return this._insert(method, path, route, parent);
+	};
+
+	Router.prototype.getRoute = function (v) {
+	  var ret = v;
+
+	  if (typeof v === "number") {
+	    ret = this.explode()[v];
+	  }
+	  else if (typeof v === "string"){
+	    var h = this.explode();
+	    ret = h.indexOf(v);
+	  }
+	  else {
+	    ret = this.explode();
+	  }
+
+	  return ret;
+	};
+
+	Router.prototype.destroy = function () {
+	  listener.destroy(this.handler);
+	  return this;
+	};
+
+	Router.prototype.getPath = function () {
+	  var path = window.location.pathname;
+	  if (path.substr(0, 1) !== '/') {
+	    path = '/' + path;
+	  }
+	  return path;
+	};
+	function _every(arr, iterator) {
+	  for (var i = 0; i < arr.length; i += 1) {
+	    if (iterator(arr[i], i, arr) === false) {
+	      return;
+	    }
+	  }
+	}
+
+	function _flatten(arr) {
+	  var flat = [];
+	  for (var i = 0, n = arr.length; i < n; i++) {
+	    flat = flat.concat(arr[i]);
+	  }
+	  return flat;
+	}
+
+	function _asyncEverySeries(arr, iterator, callback) {
+	  if (!arr.length) {
+	    return callback();
+	  }
+	  var completed = 0;
+	  (function iterate() {
+	    iterator(arr[completed], function(err) {
+	      if (err || err === false) {
+	        callback(err);
+	        callback = function() {};
+	      } else {
+	        completed += 1;
+	        if (completed === arr.length) {
+	          callback();
+	        } else {
+	          iterate();
+	        }
+	      }
+	    });
+	  })();
+	}
+
+	function paramifyString(str, params, mod) {
+	  mod = str;
+	  for (var param in params) {
+	    if (params.hasOwnProperty(param)) {
+	      mod = params[param](str);
+	      if (mod !== str) {
+	        break;
+	      }
+	    }
+	  }
+	  return mod === str ? "([._a-zA-Z0-9-%()]+)" : mod;
+	}
+
+	function regifyString(str, params) {
+	  var matches, last = 0, out = "";
+	  while (matches = str.substr(last).match(/[^\w\d\- %@&]*\*[^\w\d\- %@&]*/)) {
+	    last = matches.index + matches[0].length;
+	    matches[0] = matches[0].replace(/^\*/, "([_.()!\\ %@&a-zA-Z0-9-]+)");
+	    out += str.substr(0, matches.index) + matches[0];
+	  }
+	  str = out += str.substr(last);
+	  var captures = str.match(/:([^\/]+)/ig), capture, length;
+	  if (captures) {
+	    length = captures.length;
+	    for (var i = 0; i < length; i++) {
+	      capture = captures[i];
+	      if (capture.slice(0, 2) === "::") {
+	        str = capture.slice(1);
+	      } else {
+	        str = str.replace(capture, paramifyString(capture, params));
+	      }
+	    }
+	  }
+	  return str;
+	}
+
+	function terminator(routes, delimiter, start, stop) {
+	  var last = 0, left = 0, right = 0, start = (start || "(").toString(), stop = (stop || ")").toString(), i;
+	  for (i = 0; i < routes.length; i++) {
+	    var chunk = routes[i];
+	    if (chunk.indexOf(start, last) > chunk.indexOf(stop, last) || ~chunk.indexOf(start, last) && !~chunk.indexOf(stop, last) || !~chunk.indexOf(start, last) && ~chunk.indexOf(stop, last)) {
+	      left = chunk.indexOf(start, last);
+	      right = chunk.indexOf(stop, last);
+	      if (~left && !~right || !~left && ~right) {
+	        var tmp = routes.slice(0, (i || 1) + 1).join(delimiter);
+	        routes = [ tmp ].concat(routes.slice((i || 1) + 1));
+	      }
+	      last = (right > left ? right : left) + 1;
+	      i = 0;
+	    } else {
+	      last = 0;
+	    }
+	  }
+	  return routes;
+	}
+
+	var QUERY_SEPARATOR = /\?.*/;
+
+	Router.prototype.configure = function(options) {
+	  options = options || {};
+	  for (var i = 0; i < this.methods.length; i++) {
+	    this._methods[this.methods[i]] = true;
+	  }
+	  this.recurse = options.recurse || this.recurse || false;
+	  this.async = options.async || false;
+	  this.delimiter = options.delimiter || "/";
+	  this.strict = typeof options.strict === "undefined" ? true : options.strict;
+	  this.notfound = options.notfound;
+	  this.resource = options.resource;
+	  this.history = options.html5history && this.historySupport || false;
+	  this.run_in_init = this.history === true && options.run_handler_in_init !== false;
+	  this.convert_hash_in_init = this.history === true && options.convert_hash_in_init !== false;
+	  this.every = {
+	    after: options.after || null,
+	    before: options.before || null,
+	    on: options.on || null
+	  };
+	  return this;
+	};
+
+	Router.prototype.param = function(token, matcher) {
+	  if (token[0] !== ":") {
+	    token = ":" + token;
+	  }
+	  var compiled = new RegExp(token, "g");
+	  this.params[token] = function(str) {
+	    return str.replace(compiled, matcher.source || matcher);
+	  };
+	  return this;
+	};
+
+	Router.prototype.on = Router.prototype.route = function(method, path, route) {
+	  var self = this;
+	  if (!route && typeof path == "function") {
+	    route = path;
+	    path = method;
+	    method = "on";
+	  }
+	  if (Array.isArray(path)) {
+	    return path.forEach(function(p) {
+	      self.on(method, p, route);
+	    });
+	  }
+	  if (path.source) {
+	    path = path.source.replace(/\\\//ig, "/");
+	  }
+	  if (Array.isArray(method)) {
+	    return method.forEach(function(m) {
+	      self.on(m.toLowerCase(), path, route);
+	    });
+	  }
+	  path = path.split(new RegExp(this.delimiter));
+	  path = terminator(path, this.delimiter);
+	  this.insert(method, this.scope.concat(path), route);
+	};
+
+	Router.prototype.path = function(path, routesFn) {
+	  var self = this, length = this.scope.length;
+	  if (path.source) {
+	    path = path.source.replace(/\\\//ig, "/");
+	  }
+	  path = path.split(new RegExp(this.delimiter));
+	  path = terminator(path, this.delimiter);
+	  this.scope = this.scope.concat(path);
+	  routesFn.call(this, this);
+	  this.scope.splice(length, path.length);
+	};
+
+	Router.prototype.dispatch = function(method, path, callback) {
+	  var self = this, fns = this.traverse(method, path.replace(QUERY_SEPARATOR, ""), this.routes, ""), invoked = this._invoked, after;
+	  this._invoked = true;
+	  if (!fns || fns.length === 0) {
+	    this.last = [];
+	    if (typeof this.notfound === "function") {
+	      this.invoke([ this.notfound ], {
+	        method: method,
+	        path: path
+	      }, callback);
+	    }
+	    return false;
+	  }
+	  if (this.recurse === "forward") {
+	    fns = fns.reverse();
+	  }
+	  function updateAndInvoke() {
+	    self.last = fns.after;
+	    self.invoke(self.runlist(fns), self, callback);
+	  }
+	  after = this.every && this.every.after ? [ this.every.after ].concat(this.last) : [ this.last ];
+	  if (after && after.length > 0 && invoked) {
+	    if (this.async) {
+	      this.invoke(after, this, updateAndInvoke);
+	    } else {
+	      this.invoke(after, this);
+	      updateAndInvoke();
+	    }
+	    return true;
+	  }
+	  updateAndInvoke();
+	  return true;
+	};
+
+	Router.prototype.invoke = function(fns, thisArg, callback) {
+	  var self = this;
+	  var apply;
+	  if (this.async) {
+	    apply = function(fn, next) {
+	      if (Array.isArray(fn)) {
+	        return _asyncEverySeries(fn, apply, next);
+	      } else if (typeof fn == "function") {
+	        fn.apply(thisArg, (fns.captures || []).concat(next));
+	      }
+	    };
+	    _asyncEverySeries(fns, apply, function() {
+	      if (callback) {
+	        callback.apply(thisArg, arguments);
+	      }
+	    });
+	  } else {
+	    apply = function(fn) {
+	      if (Array.isArray(fn)) {
+	        return _every(fn, apply);
+	      } else if (typeof fn === "function") {
+	        return fn.apply(thisArg, fns.captures || []);
+	      } else if (typeof fn === "string" && self.resource) {
+	        self.resource[fn].apply(thisArg, fns.captures || []);
+	      }
+	    };
+	    _every(fns, apply);
+	  }
+	};
+
+	Router.prototype.traverse = function(method, path, routes, regexp, filter) {
+	  var fns = [], current, exact, match, next, that;
+	  function filterRoutes(routes) {
+	    if (!filter) {
+	      return routes;
+	    }
+	    function deepCopy(source) {
+	      var result = [];
+	      for (var i = 0; i < source.length; i++) {
+	        result[i] = Array.isArray(source[i]) ? deepCopy(source[i]) : source[i];
+	      }
+	      return result;
+	    }
+	    function applyFilter(fns) {
+	      for (var i = fns.length - 1; i >= 0; i--) {
+	        if (Array.isArray(fns[i])) {
+	          applyFilter(fns[i]);
+	          if (fns[i].length === 0) {
+	            fns.splice(i, 1);
+	          }
+	        } else {
+	          if (!filter(fns[i])) {
+	            fns.splice(i, 1);
+	          }
+	        }
+	      }
+	    }
+	    var newRoutes = deepCopy(routes);
+	    newRoutes.matched = routes.matched;
+	    newRoutes.captures = routes.captures;
+	    newRoutes.after = routes.after.filter(filter);
+	    applyFilter(newRoutes);
+	    return newRoutes;
+	  }
+	  if (path === this.delimiter && routes[method]) {
+	    next = [ [ routes.before, routes[method] ].filter(Boolean) ];
+	    next.after = [ routes.after ].filter(Boolean);
+	    next.matched = true;
+	    next.captures = [];
+	    return filterRoutes(next);
+	  }
+	  for (var r in routes) {
+	    if (routes.hasOwnProperty(r) && (!this._methods[r] || this._methods[r] && typeof routes[r] === "object" && !Array.isArray(routes[r]))) {
+	      current = exact = regexp + this.delimiter + r;
+	      if (!this.strict) {
+	        exact += "[" + this.delimiter + "]?";
+	      }
+	      match = path.match(new RegExp("^" + exact));
+	      if (!match) {
+	        continue;
+	      }
+	      if (match[0] && match[0] == path && routes[r][method]) {
+	        next = [ [ routes[r].before, routes[r][method] ].filter(Boolean) ];
+	        next.after = [ routes[r].after ].filter(Boolean);
+	        next.matched = true;
+	        next.captures = match.slice(1);
+	        if (this.recurse && routes === this.routes) {
+	          next.push([ routes.before, routes.on ].filter(Boolean));
+	          next.after = next.after.concat([ routes.after ].filter(Boolean));
+	        }
+	        return filterRoutes(next);
+	      }
+	      next = this.traverse(method, path, routes[r], current);
+	      if (next.matched) {
+	        if (next.length > 0) {
+	          fns = fns.concat(next);
+	        }
+	        if (this.recurse) {
+	          fns.push([ routes[r].before, routes[r].on ].filter(Boolean));
+	          next.after = next.after.concat([ routes[r].after ].filter(Boolean));
+	          if (routes === this.routes) {
+	            fns.push([ routes["before"], routes["on"] ].filter(Boolean));
+	            next.after = next.after.concat([ routes["after"] ].filter(Boolean));
+	          }
+	        }
+	        fns.matched = true;
+	        fns.captures = next.captures;
+	        fns.after = next.after;
+	        return filterRoutes(fns);
+	      }
+	    }
+	  }
+	  return false;
+	};
+
+	Router.prototype.insert = function(method, path, route, parent) {
+	  var methodType, parentType, isArray, nested, part;
+	  path = path.filter(function(p) {
+	    return p && p.length > 0;
+	  });
+	  parent = parent || this.routes;
+	  part = path.shift();
+	  if (/\:|\*/.test(part) && !/\\d|\\w/.test(part)) {
+	    part = regifyString(part, this.params);
+	  }
+	  if (path.length > 0) {
+	    parent[part] = parent[part] || {};
+	    return this.insert(method, path, route, parent[part]);
+	  }
+	  if (!part && !path.length && parent === this.routes) {
+	    methodType = typeof parent[method];
+	    switch (methodType) {
+	     case "function":
+	      parent[method] = [ parent[method], route ];
+	      return;
+	     case "object":
+	      parent[method].push(route);
+	      return;
+	     case "undefined":
+	      parent[method] = route;
+	      return;
+	    }
+	    return;
+	  }
+	  parentType = typeof parent[part];
+	  isArray = Array.isArray(parent[part]);
+	  if (parent[part] && !isArray && parentType == "object") {
+	    methodType = typeof parent[part][method];
+	    switch (methodType) {
+	     case "function":
+	      parent[part][method] = [ parent[part][method], route ];
+	      return;
+	     case "object":
+	      parent[part][method].push(route);
+	      return;
+	     case "undefined":
+	      parent[part][method] = route;
+	      return;
+	    }
+	  } else if (parentType == "undefined") {
+	    nested = {};
+	    nested[method] = route;
+	    parent[part] = nested;
+	    return;
+	  }
+	  throw new Error("Invalid route context: " + parentType);
+	};
+
+
+
+	Router.prototype.extend = function(methods) {
+	  var self = this, len = methods.length, i;
+	  function extend(method) {
+	    self._methods[method] = true;
+	    self[method] = function() {
+	      var extra = arguments.length === 1 ? [ method, "" ] : [ method ];
+	      self.on.apply(self, extra.concat(Array.prototype.slice.call(arguments)));
+	    };
+	  }
+	  for (i = 0; i < len; i++) {
+	    extend(methods[i]);
+	  }
+	};
+
+	Router.prototype.runlist = function(fns) {
+	  var runlist = this.every && this.every.before ? [ this.every.before ].concat(_flatten(fns)) : _flatten(fns);
+	  if (this.every && this.every.on) {
+	    runlist.push(this.every.on);
+	  }
+	  runlist.captures = fns.captures;
+	  runlist.source = fns.source;
+	  return runlist;
+	};
+
+	Router.prototype.mount = function(routes, path) {
+	  if (!routes || typeof routes !== "object" || Array.isArray(routes)) {
+	    return;
+	  }
+	  var self = this;
+	  path = path || [];
+	  if (!Array.isArray(path)) {
+	    path = path.split(self.delimiter);
+	  }
+	  function insertOrMount(route, local) {
+	    var rename = route, parts = route.split(self.delimiter), routeType = typeof routes[route], isRoute = parts[0] === "" || !self._methods[parts[0]], event = isRoute ? "on" : rename;
+	    if (isRoute) {
+	      rename = rename.slice((rename.match(new RegExp("^" + self.delimiter)) || [ "" ])[0].length);
+	      parts.shift();
+	    }
+	    if (isRoute && routeType === "object" && !Array.isArray(routes[route])) {
+	      local = local.concat(parts);
+	      self.mount(routes[route], local);
+	      return;
+	    }
+	    if (isRoute) {
+	      local = local.concat(rename.split(self.delimiter));
+	      local = terminator(local, self.delimiter);
+	    }
+	    self.insert(event, local, routes[route]);
+	  }
+	  for (var route in routes) {
+	    if (routes.hasOwnProperty(route)) {
+	      insertOrMount(route, path.slice(0));
+	    }
+	  }
+	};
+
+
+
+	}( true ? exports : window));
 
 /***/ },
 /* 18 */
@@ -19587,9 +19493,228 @@
 /* 158 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var fuzzy = __webpack_require__(159)
-	  , storage = __webpack_require__(14)
-	  , at = __webpack_require__(160)
+	var storage = __webpack_require__(13)
+
+	function init($ed, $preview) {
+
+	  window.md = {
+	    sync_scroll: function(b) { 
+	      if (b===undefined) { return cfg_load('sync-scroll') }
+	      storage.config('sync-scroll', b)
+	      cfg.sync_scroll = b
+	    }
+
+	    ,css: function($elem, name, css, _val) {
+	      if (css === undefined) { return storage.config(name + '-css', clog) }
+
+	      if (_val) {
+	        var key = css
+	        css = {}
+	        css[key] = _val
+	      }
+
+	      storage.config(name + '-css', css)
+	      $elem.css(css)
+	    }
+
+	    ,reset_config: function(k) {
+	      if (k) {
+	        if (k instanceof Array) 
+	          k.forEach(md.reset_config);
+	        else 
+	          storage.config(k, null);
+	      } else {
+	        if (confirm("Erase all saved config?")) {
+	          window.md.reset_config([
+	            'sync-scroll', 
+	            'editor-css', 
+	            'preview-css',
+	            'rs-position'
+	          ])
+
+	          location.reload()
+	        } else {
+	          console.log('Configuration left unchanged.')
+	        }
+	      }
+	    }
+
+	    ,rm: function(filename) {
+	      if (!filename) return;
+
+	      if (! (filename instanceof Array))
+	        filename = [filename];
+
+	      if (confirm("About to remove files:\n\n-----\n\n" + filename.join("\n") + '\n\n-----\n\nReally do it?')) {
+	        filename.forEach(function(f) {
+	          storage.files.store.removeItem(f)
+	        })
+	      }
+	    }
+
+	    ,list_files: function() {
+	      storage.files.store.keys(function(e, ks) {
+	        if (e) throw e;
+	        console.log(ks)
+	      })
+	    }
+
+	    ,storage: storage
+	  }
+
+	  window.md.css.editor = window.md.css.bind(null, $ed, 'editor')
+	  window.md.css.preview = window.md.css.bind(null, $preview, 'preview')
+
+	  print_help()
+
+	}
+
+	function print_help() {
+	  var _ = function(x,s){ console.log('%c'+x, s||'')}
+	    , cmdcss = 'font-family:monospace;padding:4px;display:inline-block;background:#f2f2f2;font-weight:bold;'
+
+	  console.group("%cKeyboard Shortcuts:", 'font-weight:bold;font-size:1.125em;')
+	  _("<" + (is_mac() ? "cmd" : "ctrl") + "-s> :: Save/name file")
+	  _("<ctrl-p> :: Find saved file")
+	  _("<ctrl-=> :: Toggle scroll syncing")
+	  console.groupEnd()
+	  _("")
+
+	  console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
+	  _('md.rm( "filename" )              ||  md.rm(["f1", "f2", ...])')
+	  _('md.css.editor( "prop", "val" )   ||  md.css.editor( {prop:val, ...} )')
+	  _('md.css.preview( "prop", "val" )  ||  md.css.preview({prop:val, ...})')
+	  _('md.css( $elem, "storage-key", {prop:val, ...} )')
+	  _('md.sync_scroll( sync? )')
+	  _('md.reset_config()')
+	  console.groupEnd()
+	  _("")
+	  
+	  if (! is_mac()) {
+	    $('.windosx').text('ctrl')
+	  }
+	}
+
+	function clog() {
+	  console.log.apply(console, arguments)
+	}
+
+	function is_mac() {
+	  return ['Mac68K', 'MacPPC', 'MacIntel'].indexOf(navigator.platform)
+	}
+
+
+	module.exports = {init: init}
+
+
+
+/***/ },
+/* 159 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var storage = __webpack_require__(13)
+	  , search = __webpack_require__(160)
+	  , key = __webpack_require__(168)
+	  , cfg = __webpack_require__(169)
+	  , d = __webpack_require__(170)
+
+	function init() {
+	  // always listen for key shortcuts
+	  key.filter = function(){ return true }
+
+
+	  // Document handling
+
+	  key('command+s, ctrl+s', function() {
+	    if (!CURRENT_FILE || (CURRENT_FILE == cfg.default_filename)) {
+	      // save as a named file
+	      var file_name = prompt('Name this file:')
+	      if (file_name) {
+	        CURRENT_FILE = file_name
+	        save_file(function(){ router.setRoute('/'+file_name) })
+	        storage.files(cfg.default_filename, '')
+	      }
+	    } else {
+	      // placebo
+	      var delay = 210
+	        , old = document.title
+
+	      document.title = '✔ Saved'
+	      setTimeout(function(){ document.title = '✔ ' },       delay)
+	      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 2)
+	      setTimeout(function(){ document.title = '✔ ' },       delay * 3)
+	      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 4)
+	      setTimeout(function(){ document.title = old},         delay * 9)
+	    }
+
+	    return false
+	  })
+
+	  key('ctrl+p', function() {
+	    storage.files.store.keys(function(e, ks) {
+	      if (e) throw e;
+
+	      key.setScope('file-list')
+	      d.flist_frame.show()
+
+	      populate_file_list(ks)
+
+	      d.flist_search.focus()
+	    })
+
+	    return false
+	  })
+
+
+	  // Configuration
+
+	  key('ctrl+=', function() {
+	    storage.config('sync-scroll', function(current) {
+	      cfg.sync_scroll = !current
+	      storage.config('sync-scroll', !current)
+	    })
+	  })
+
+	  key('escape', 'file-list', function() {
+	    d.flist_frame.hide()
+	    key.setScope(null)
+	    return false
+	  })
+
+
+	  search.init()
+	  listen_for_search()
+
+	}
+
+
+	function listen_for_search() {
+	  d.flist_search.on('input', function() {
+	    var q = d.flist_search.val()
+	    populate_file_list(search.search(q))
+	  })
+	}
+
+	function populate_file_list(ks) {
+	  d.flist.empty()
+	  ks.forEach(function(k) {
+	    d.flist.append('<li><a href="#/'+k+'">'+k+'</li>')
+	  })
+	}
+
+	module.exports = {
+	  init: init
+	}
+
+
+
+/***/ },
+/* 160 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var fuzzy = __webpack_require__(161)
+	  , storage = __webpack_require__(13)
+	  , at = __webpack_require__(162)
 
 	var f, filenames
 
@@ -19625,7 +19750,7 @@
 
 
 /***/ },
-/* 159 */
+/* 161 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -19767,7 +19892,7 @@
 
 
 /***/ },
-/* 160 */
+/* 162 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -19778,9 +19903,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseAt = __webpack_require__(161),
-	    baseFlatten = __webpack_require__(162),
-	    restParam = __webpack_require__(165);
+	var baseAt = __webpack_require__(163),
+	    baseFlatten = __webpack_require__(164),
+	    restParam = __webpack_require__(167);
 
 	/**
 	 * Creates an array of elements corresponding to the given keys, or indexes,
@@ -19810,7 +19935,7 @@
 
 
 /***/ },
-/* 161 */
+/* 163 */
 /***/ function(module, exports) {
 
 	/**
@@ -19926,7 +20051,7 @@
 
 
 /***/ },
-/* 162 */
+/* 164 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -19937,8 +20062,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var isArguments = __webpack_require__(163),
-	    isArray = __webpack_require__(164);
+	var isArguments = __webpack_require__(165),
+	    isArray = __webpack_require__(166);
 
 	/**
 	 * Checks if `value` is object-like.
@@ -20063,7 +20188,7 @@
 
 
 /***/ },
-/* 163 */
+/* 165 */
 /***/ function(module, exports) {
 
 	/**
@@ -20175,7 +20300,7 @@
 
 
 /***/ },
-/* 164 */
+/* 166 */
 /***/ function(module, exports) {
 
 	/**
@@ -20361,7 +20486,7 @@
 
 
 /***/ },
-/* 165 */
+/* 167 */
 /***/ function(module, exports) {
 
 	/**
@@ -20434,7 +20559,345 @@
 
 
 /***/ },
-/* 166 */
+/* 168 */
+/***/ function(module, exports, __webpack_require__) {
+
+	//     keymaster.js
+	//     (c) 2011-2013 Thomas Fuchs
+	//     keymaster.js may be freely distributed under the MIT license.
+
+	;(function(global){
+	  var k,
+	    _handlers = {},
+	    _mods = { 16: false, 18: false, 17: false, 91: false },
+	    _scope = 'all',
+	    // modifier keys
+	    _MODIFIERS = {
+	      '⇧': 16, shift: 16,
+	      '⌥': 18, alt: 18, option: 18,
+	      '⌃': 17, ctrl: 17, control: 17,
+	      '⌘': 91, command: 91
+	    },
+	    // special keys
+	    _MAP = {
+	      backspace: 8, tab: 9, clear: 12,
+	      enter: 13, 'return': 13,
+	      esc: 27, escape: 27, space: 32,
+	      left: 37, up: 38,
+	      right: 39, down: 40,
+	      del: 46, 'delete': 46,
+	      home: 36, end: 35,
+	      pageup: 33, pagedown: 34,
+	      ',': 188, '.': 190, '/': 191,
+	      '`': 192, '-': 189, '=': 187,
+	      ';': 186, '\'': 222,
+	      '[': 219, ']': 221, '\\': 220
+	    },
+	    code = function(x){
+	      return _MAP[x] || x.toUpperCase().charCodeAt(0);
+	    },
+	    _downKeys = [];
+
+	  for(k=1;k<20;k++) _MAP['f'+k] = 111+k;
+
+	  // IE doesn't support Array#indexOf, so have a simple replacement
+	  function index(array, item){
+	    var i = array.length;
+	    while(i--) if(array[i]===item) return i;
+	    return -1;
+	  }
+
+	  // for comparing mods before unassignment
+	  function compareArray(a1, a2) {
+	    if (a1.length != a2.length) return false;
+	    for (var i = 0; i < a1.length; i++) {
+	        if (a1[i] !== a2[i]) return false;
+	    }
+	    return true;
+	  }
+
+	  var modifierMap = {
+	      16:'shiftKey',
+	      18:'altKey',
+	      17:'ctrlKey',
+	      91:'metaKey'
+	  };
+	  function updateModifierKey(event) {
+	      for(k in _mods) _mods[k] = event[modifierMap[k]];
+	  };
+
+	  // handle keydown event
+	  function dispatch(event) {
+	    var key, handler, k, i, modifiersMatch, scope;
+	    key = event.keyCode;
+
+	    if (index(_downKeys, key) == -1) {
+	        _downKeys.push(key);
+	    }
+
+	    // if a modifier key, set the key.<modifierkeyname> property to true and return
+	    if(key == 93 || key == 224) key = 91; // right command on webkit, command on Gecko
+	    if(key in _mods) {
+	      _mods[key] = true;
+	      // 'assignKey' from inside this closure is exported to window.key
+	      for(k in _MODIFIERS) if(_MODIFIERS[k] == key) assignKey[k] = true;
+	      return;
+	    }
+	    updateModifierKey(event);
+
+	    // see if we need to ignore the keypress (filter() can can be overridden)
+	    // by default ignore key presses if a select, textarea, or input is focused
+	    if(!assignKey.filter.call(this, event)) return;
+
+	    // abort if no potentially matching shortcuts found
+	    if (!(key in _handlers)) return;
+
+	    scope = getScope();
+
+	    // for each potential shortcut
+	    for (i = 0; i < _handlers[key].length; i++) {
+	      handler = _handlers[key][i];
+
+	      // see if it's in the current scope
+	      if(handler.scope == scope || handler.scope == 'all'){
+	        // check if modifiers match if any
+	        modifiersMatch = handler.mods.length > 0;
+	        for(k in _mods)
+	          if((!_mods[k] && index(handler.mods, +k) > -1) ||
+	            (_mods[k] && index(handler.mods, +k) == -1)) modifiersMatch = false;
+	        // call the handler and stop the event if neccessary
+	        if((handler.mods.length == 0 && !_mods[16] && !_mods[18] && !_mods[17] && !_mods[91]) || modifiersMatch){
+	          if(handler.method(event, handler)===false){
+	            if(event.preventDefault) event.preventDefault();
+	              else event.returnValue = false;
+	            if(event.stopPropagation) event.stopPropagation();
+	            if(event.cancelBubble) event.cancelBubble = true;
+	          }
+	        }
+	      }
+	    }
+	  };
+
+	  // unset modifier keys on keyup
+	  function clearModifier(event){
+	    var key = event.keyCode, k,
+	        i = index(_downKeys, key);
+
+	    // remove key from _downKeys
+	    if (i >= 0) {
+	        _downKeys.splice(i, 1);
+	    }
+
+	    if(key == 93 || key == 224) key = 91;
+	    if(key in _mods) {
+	      _mods[key] = false;
+	      for(k in _MODIFIERS) if(_MODIFIERS[k] == key) assignKey[k] = false;
+	    }
+	  };
+
+	  function resetModifiers() {
+	    for(k in _mods) _mods[k] = false;
+	    for(k in _MODIFIERS) assignKey[k] = false;
+	  };
+
+	  // parse and assign shortcut
+	  function assignKey(key, scope, method){
+	    var keys, mods;
+	    keys = getKeys(key);
+	    if (method === undefined) {
+	      method = scope;
+	      scope = 'all';
+	    }
+
+	    // for each shortcut
+	    for (var i = 0; i < keys.length; i++) {
+	      // set modifier keys if any
+	      mods = [];
+	      key = keys[i].split('+');
+	      if (key.length > 1){
+	        mods = getMods(key);
+	        key = [key[key.length-1]];
+	      }
+	      // convert to keycode and...
+	      key = key[0]
+	      key = code(key);
+	      // ...store handler
+	      if (!(key in _handlers)) _handlers[key] = [];
+	      _handlers[key].push({ shortcut: keys[i], scope: scope, method: method, key: keys[i], mods: mods });
+	    }
+	  };
+
+	  // unbind all handlers for given key in current scope
+	  function unbindKey(key, scope) {
+	    var multipleKeys, keys,
+	      mods = [],
+	      i, j, obj;
+
+	    multipleKeys = getKeys(key);
+
+	    for (j = 0; j < multipleKeys.length; j++) {
+	      keys = multipleKeys[j].split('+');
+
+	      if (keys.length > 1) {
+	        mods = getMods(keys);
+	        key = keys[keys.length - 1];
+	      }
+
+	      key = code(key);
+
+	      if (scope === undefined) {
+	        scope = getScope();
+	      }
+	      if (!_handlers[key]) {
+	        return;
+	      }
+	      for (i = 0; i < _handlers[key].length; i++) {
+	        obj = _handlers[key][i];
+	        // only clear handlers if correct scope and mods match
+	        if (obj.scope === scope && compareArray(obj.mods, mods)) {
+	          _handlers[key][i] = {};
+	        }
+	      }
+	    }
+	  };
+
+	  // Returns true if the key with code 'keyCode' is currently down
+	  // Converts strings into key codes.
+	  function isPressed(keyCode) {
+	      if (typeof(keyCode)=='string') {
+	        keyCode = code(keyCode);
+	      }
+	      return index(_downKeys, keyCode) != -1;
+	  }
+
+	  function getPressedKeyCodes() {
+	      return _downKeys.slice(0);
+	  }
+
+	  function filter(event){
+	    var tagName = (event.target || event.srcElement).tagName;
+	    // ignore keypressed in any elements that support keyboard data input
+	    return !(tagName == 'INPUT' || tagName == 'SELECT' || tagName == 'TEXTAREA');
+	  }
+
+	  // initialize key.<modifier> to false
+	  for(k in _MODIFIERS) assignKey[k] = false;
+
+	  // set current scope (default 'all')
+	  function setScope(scope){ _scope = scope || 'all' };
+	  function getScope(){ return _scope || 'all' };
+
+	  // delete all handlers for a given scope
+	  function deleteScope(scope){
+	    var key, handlers, i;
+
+	    for (key in _handlers) {
+	      handlers = _handlers[key];
+	      for (i = 0; i < handlers.length; ) {
+	        if (handlers[i].scope === scope) handlers.splice(i, 1);
+	        else i++;
+	      }
+	    }
+	  };
+
+	  // abstract key logic for assign and unassign
+	  function getKeys(key) {
+	    var keys;
+	    key = key.replace(/\s/g, '');
+	    keys = key.split(',');
+	    if ((keys[keys.length - 1]) == '') {
+	      keys[keys.length - 2] += ',';
+	    }
+	    return keys;
+	  }
+
+	  // abstract mods logic for assign and unassign
+	  function getMods(key) {
+	    var mods = key.slice(0, key.length - 1);
+	    for (var mi = 0; mi < mods.length; mi++)
+	    mods[mi] = _MODIFIERS[mods[mi]];
+	    return mods;
+	  }
+
+	  // cross-browser events
+	  function addEvent(object, event, method) {
+	    if (object.addEventListener)
+	      object.addEventListener(event, method, false);
+	    else if(object.attachEvent)
+	      object.attachEvent('on'+event, function(){ method(window.event) });
+	  };
+
+	  // set the handlers globally on document
+	  addEvent(document, 'keydown', function(event) { dispatch(event) }); // Passing _scope to a callback to ensure it remains the same by execution. Fixes #48
+	  addEvent(document, 'keyup', clearModifier);
+
+	  // reset modifiers to false whenever the window is (re)focused.
+	  addEvent(window, 'focus', resetModifiers);
+
+	  // store previously defined key
+	  var previousKey = global.key;
+
+	  // restore previously defined key and return reference to our key object
+	  function noConflict() {
+	    var k = global.key;
+	    global.key = previousKey;
+	    return k;
+	  }
+
+	  // set window.key and window.key.set/get/deleteScope, and the default filter
+	  global.key = assignKey;
+	  global.key.setScope = setScope;
+	  global.key.getScope = getScope;
+	  global.key.deleteScope = deleteScope;
+	  global.key.filter = filter;
+	  global.key.isPressed = isPressed;
+	  global.key.getPressedKeyCodes = getPressedKeyCodes;
+	  global.key.noConflict = noConflict;
+	  global.key.unbind = unbindKey;
+
+	  if(true) module.exports = assignKey;
+
+	})(this);
+
+
+/***/ },
+/* 169 */
+/***/ function(module, exports) {
+
+	module.exports = {
+
+	   sync_scroll: true
+	  ,default_filename: '*scratch*'
+
+	}
+
+
+
+/***/ },
+/* 170 */
+/***/ function(module, exports) {
+
+	var d = module.exports = {}
+
+
+	d.eframe = $('#editor-frame')
+	d.md = $('.markdown-body')
+	d.preview = $('#preview')
+
+	d.flist = $('#file-list')
+	d.flist_frame = d.flist.parent()
+	d.flist_search = $('#file-list-search')
+
+	d.ed = $('#editor')
+	d.rs = $('#rs')
+
+	d.bod = $('body')
+
+
+
+
+/***/ },
+/* 171 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
@@ -20445,8 +20908,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseToString = __webpack_require__(167),
-	    createPadding = __webpack_require__(168);
+	var baseToString = __webpack_require__(172),
+	    createPadding = __webpack_require__(173);
 
 	/* Native method references for those with the same name as other `lodash` methods. */
 	var nativeCeil = Math.ceil,
@@ -20496,7 +20959,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 167 */
+/* 172 */
 /***/ function(module, exports) {
 
 	/**
@@ -20524,7 +20987,7 @@
 
 
 /***/ },
-/* 168 */
+/* 173 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
@@ -20535,7 +20998,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var repeat = __webpack_require__(169);
+	var repeat = __webpack_require__(174);
 
 	/* Native method references for those with the same name as other `lodash` methods. */
 	var nativeCeil = Math.ceil,
@@ -20568,7 +21031,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 169 */
+/* 174 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
@@ -20579,7 +21042,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseToString = __webpack_require__(167);
+	var baseToString = __webpack_require__(172);
 
 	/* Native method references for those with the same name as other `lodash` methods. */
 	var nativeFloor = Math.floor,
@@ -20630,7 +21093,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 170 */
+/* 175 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
@@ -21920,427 +22383,6 @@
 	}());
 
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 171 */
-/***/ function(module, exports, __webpack_require__) {
-
-	//     keymaster.js
-	//     (c) 2011-2013 Thomas Fuchs
-	//     keymaster.js may be freely distributed under the MIT license.
-
-	;(function(global){
-	  var k,
-	    _handlers = {},
-	    _mods = { 16: false, 18: false, 17: false, 91: false },
-	    _scope = 'all',
-	    // modifier keys
-	    _MODIFIERS = {
-	      '⇧': 16, shift: 16,
-	      '⌥': 18, alt: 18, option: 18,
-	      '⌃': 17, ctrl: 17, control: 17,
-	      '⌘': 91, command: 91
-	    },
-	    // special keys
-	    _MAP = {
-	      backspace: 8, tab: 9, clear: 12,
-	      enter: 13, 'return': 13,
-	      esc: 27, escape: 27, space: 32,
-	      left: 37, up: 38,
-	      right: 39, down: 40,
-	      del: 46, 'delete': 46,
-	      home: 36, end: 35,
-	      pageup: 33, pagedown: 34,
-	      ',': 188, '.': 190, '/': 191,
-	      '`': 192, '-': 189, '=': 187,
-	      ';': 186, '\'': 222,
-	      '[': 219, ']': 221, '\\': 220
-	    },
-	    code = function(x){
-	      return _MAP[x] || x.toUpperCase().charCodeAt(0);
-	    },
-	    _downKeys = [];
-
-	  for(k=1;k<20;k++) _MAP['f'+k] = 111+k;
-
-	  // IE doesn't support Array#indexOf, so have a simple replacement
-	  function index(array, item){
-	    var i = array.length;
-	    while(i--) if(array[i]===item) return i;
-	    return -1;
-	  }
-
-	  // for comparing mods before unassignment
-	  function compareArray(a1, a2) {
-	    if (a1.length != a2.length) return false;
-	    for (var i = 0; i < a1.length; i++) {
-	        if (a1[i] !== a2[i]) return false;
-	    }
-	    return true;
-	  }
-
-	  var modifierMap = {
-	      16:'shiftKey',
-	      18:'altKey',
-	      17:'ctrlKey',
-	      91:'metaKey'
-	  };
-	  function updateModifierKey(event) {
-	      for(k in _mods) _mods[k] = event[modifierMap[k]];
-	  };
-
-	  // handle keydown event
-	  function dispatch(event) {
-	    var key, handler, k, i, modifiersMatch, scope;
-	    key = event.keyCode;
-
-	    if (index(_downKeys, key) == -1) {
-	        _downKeys.push(key);
-	    }
-
-	    // if a modifier key, set the key.<modifierkeyname> property to true and return
-	    if(key == 93 || key == 224) key = 91; // right command on webkit, command on Gecko
-	    if(key in _mods) {
-	      _mods[key] = true;
-	      // 'assignKey' from inside this closure is exported to window.key
-	      for(k in _MODIFIERS) if(_MODIFIERS[k] == key) assignKey[k] = true;
-	      return;
-	    }
-	    updateModifierKey(event);
-
-	    // see if we need to ignore the keypress (filter() can can be overridden)
-	    // by default ignore key presses if a select, textarea, or input is focused
-	    if(!assignKey.filter.call(this, event)) return;
-
-	    // abort if no potentially matching shortcuts found
-	    if (!(key in _handlers)) return;
-
-	    scope = getScope();
-
-	    // for each potential shortcut
-	    for (i = 0; i < _handlers[key].length; i++) {
-	      handler = _handlers[key][i];
-
-	      // see if it's in the current scope
-	      if(handler.scope == scope || handler.scope == 'all'){
-	        // check if modifiers match if any
-	        modifiersMatch = handler.mods.length > 0;
-	        for(k in _mods)
-	          if((!_mods[k] && index(handler.mods, +k) > -1) ||
-	            (_mods[k] && index(handler.mods, +k) == -1)) modifiersMatch = false;
-	        // call the handler and stop the event if neccessary
-	        if((handler.mods.length == 0 && !_mods[16] && !_mods[18] && !_mods[17] && !_mods[91]) || modifiersMatch){
-	          if(handler.method(event, handler)===false){
-	            if(event.preventDefault) event.preventDefault();
-	              else event.returnValue = false;
-	            if(event.stopPropagation) event.stopPropagation();
-	            if(event.cancelBubble) event.cancelBubble = true;
-	          }
-	        }
-	      }
-	    }
-	  };
-
-	  // unset modifier keys on keyup
-	  function clearModifier(event){
-	    var key = event.keyCode, k,
-	        i = index(_downKeys, key);
-
-	    // remove key from _downKeys
-	    if (i >= 0) {
-	        _downKeys.splice(i, 1);
-	    }
-
-	    if(key == 93 || key == 224) key = 91;
-	    if(key in _mods) {
-	      _mods[key] = false;
-	      for(k in _MODIFIERS) if(_MODIFIERS[k] == key) assignKey[k] = false;
-	    }
-	  };
-
-	  function resetModifiers() {
-	    for(k in _mods) _mods[k] = false;
-	    for(k in _MODIFIERS) assignKey[k] = false;
-	  };
-
-	  // parse and assign shortcut
-	  function assignKey(key, scope, method){
-	    var keys, mods;
-	    keys = getKeys(key);
-	    if (method === undefined) {
-	      method = scope;
-	      scope = 'all';
-	    }
-
-	    // for each shortcut
-	    for (var i = 0; i < keys.length; i++) {
-	      // set modifier keys if any
-	      mods = [];
-	      key = keys[i].split('+');
-	      if (key.length > 1){
-	        mods = getMods(key);
-	        key = [key[key.length-1]];
-	      }
-	      // convert to keycode and...
-	      key = key[0]
-	      key = code(key);
-	      // ...store handler
-	      if (!(key in _handlers)) _handlers[key] = [];
-	      _handlers[key].push({ shortcut: keys[i], scope: scope, method: method, key: keys[i], mods: mods });
-	    }
-	  };
-
-	  // unbind all handlers for given key in current scope
-	  function unbindKey(key, scope) {
-	    var multipleKeys, keys,
-	      mods = [],
-	      i, j, obj;
-
-	    multipleKeys = getKeys(key);
-
-	    for (j = 0; j < multipleKeys.length; j++) {
-	      keys = multipleKeys[j].split('+');
-
-	      if (keys.length > 1) {
-	        mods = getMods(keys);
-	        key = keys[keys.length - 1];
-	      }
-
-	      key = code(key);
-
-	      if (scope === undefined) {
-	        scope = getScope();
-	      }
-	      if (!_handlers[key]) {
-	        return;
-	      }
-	      for (i = 0; i < _handlers[key].length; i++) {
-	        obj = _handlers[key][i];
-	        // only clear handlers if correct scope and mods match
-	        if (obj.scope === scope && compareArray(obj.mods, mods)) {
-	          _handlers[key][i] = {};
-	        }
-	      }
-	    }
-	  };
-
-	  // Returns true if the key with code 'keyCode' is currently down
-	  // Converts strings into key codes.
-	  function isPressed(keyCode) {
-	      if (typeof(keyCode)=='string') {
-	        keyCode = code(keyCode);
-	      }
-	      return index(_downKeys, keyCode) != -1;
-	  }
-
-	  function getPressedKeyCodes() {
-	      return _downKeys.slice(0);
-	  }
-
-	  function filter(event){
-	    var tagName = (event.target || event.srcElement).tagName;
-	    // ignore keypressed in any elements that support keyboard data input
-	    return !(tagName == 'INPUT' || tagName == 'SELECT' || tagName == 'TEXTAREA');
-	  }
-
-	  // initialize key.<modifier> to false
-	  for(k in _MODIFIERS) assignKey[k] = false;
-
-	  // set current scope (default 'all')
-	  function setScope(scope){ _scope = scope || 'all' };
-	  function getScope(){ return _scope || 'all' };
-
-	  // delete all handlers for a given scope
-	  function deleteScope(scope){
-	    var key, handlers, i;
-
-	    for (key in _handlers) {
-	      handlers = _handlers[key];
-	      for (i = 0; i < handlers.length; ) {
-	        if (handlers[i].scope === scope) handlers.splice(i, 1);
-	        else i++;
-	      }
-	    }
-	  };
-
-	  // abstract key logic for assign and unassign
-	  function getKeys(key) {
-	    var keys;
-	    key = key.replace(/\s/g, '');
-	    keys = key.split(',');
-	    if ((keys[keys.length - 1]) == '') {
-	      keys[keys.length - 2] += ',';
-	    }
-	    return keys;
-	  }
-
-	  // abstract mods logic for assign and unassign
-	  function getMods(key) {
-	    var mods = key.slice(0, key.length - 1);
-	    for (var mi = 0; mi < mods.length; mi++)
-	    mods[mi] = _MODIFIERS[mods[mi]];
-	    return mods;
-	  }
-
-	  // cross-browser events
-	  function addEvent(object, event, method) {
-	    if (object.addEventListener)
-	      object.addEventListener(event, method, false);
-	    else if(object.attachEvent)
-	      object.attachEvent('on'+event, function(){ method(window.event) });
-	  };
-
-	  // set the handlers globally on document
-	  addEvent(document, 'keydown', function(event) { dispatch(event) }); // Passing _scope to a callback to ensure it remains the same by execution. Fixes #48
-	  addEvent(document, 'keyup', clearModifier);
-
-	  // reset modifiers to false whenever the window is (re)focused.
-	  addEvent(window, 'focus', resetModifiers);
-
-	  // store previously defined key
-	  var previousKey = global.key;
-
-	  // restore previously defined key and return reference to our key object
-	  function noConflict() {
-	    var k = global.key;
-	    global.key = previousKey;
-	    return k;
-	  }
-
-	  // set window.key and window.key.set/get/deleteScope, and the default filter
-	  global.key = assignKey;
-	  global.key.setScope = setScope;
-	  global.key.getScope = getScope;
-	  global.key.deleteScope = deleteScope;
-	  global.key.filter = filter;
-	  global.key.isPressed = isPressed;
-	  global.key.getPressedKeyCodes = getPressedKeyCodes;
-	  global.key.noConflict = noConflict;
-	  global.key.unbind = unbindKey;
-
-	  if(true) module.exports = assignKey;
-
-	})(this);
-
-
-/***/ },
-/* 172 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var storage = __webpack_require__(14)
-
-	function init($ed, $preview) {
-
-	  window.md = {
-	    sync_scroll: function(b) { 
-	      if (b===undefined) { return cfg_load('sync-scroll') }
-	      storage.config('sync-scroll', b)
-	      cfg.sync_scroll = b
-	    }
-
-	    ,css: function($elem, name, css, _val) {
-	      if (css === undefined) { return storage.config(name + '-css', clog) }
-
-	      if (_val) {
-	        var key = css
-	        css = {}
-	        css[key] = _val
-	      }
-
-	      storage.config(name + '-css', css)
-	      $elem.css(css)
-	    }
-
-	    ,reset_config: function(k) {
-	      if (k) {
-	        if (k instanceof Array) 
-	          k.forEach(md.reset_config);
-	        else 
-	          storage.config(k, null);
-	      } else {
-	        if (confirm("Erase all saved config?")) {
-	          window.md.reset_config([
-	            'sync-scroll', 
-	            'editor-css', 
-	            'preview-css',
-	            'rs-position'
-	          ])
-
-	          location.reload()
-	        } else {
-	          console.log('Configuration left unchanged.')
-	        }
-	      }
-	    }
-
-	    ,rm: function(filename) {
-	      if (!filename) return;
-
-	      if (! (filename instanceof Array))
-	        filename = [filename];
-
-	      if (confirm("About to remove files:\n\n-----\n\n" + filename.join("\n") + '\n\n-----\n\nReally do it?')) {
-	        filename.forEach(function(f) {
-	          storage.files.store.removeItem(f)
-	        })
-	      }
-	    }
-
-	    ,list_files: function() {
-	      storage.files.store.keys(function(e, ks) {
-	        if (e) throw e;
-	        console.log(ks)
-	      })
-	    }
-
-	    ,storage: storage
-	  }
-
-	  window.md.css.editor = window.md.css.bind(null, $ed, 'editor')
-	  window.md.css.preview = window.md.css.bind(null, $preview, 'preview')
-
-	  print_help()
-
-	}
-
-	function print_help() {
-	  var _ = function(x,s){ console.log('%c'+x, s||'')}
-	    , cmdcss = 'font-family:monospace;padding:4px;display:inline-block;background:#f2f2f2;font-weight:bold;'
-
-	  console.group("%cKeyboard Shortcuts:", 'font-weight:bold;font-size:1.125em;')
-	  _("<" + (is_mac() ? "cmd" : "ctrl") + "-s> :: Save/name file")
-	  _("<ctrl-p> :: Find saved file")
-	  _("<ctrl-=> :: Toggle scroll syncing")
-	  console.groupEnd()
-	  _("")
-
-	  console.group("%cAvailable Configuration:", 'font-weight:bold;font-size:1.125em;')
-	  _('md.rm( "filename" )              ||  md.rm(["f1", "f2", ...])')
-	  _('md.css.editor( "prop", "val" )   ||  md.css.editor( {prop:val, ...} )')
-	  _('md.css.preview( "prop", "val" )  ||  md.css.preview({prop:val, ...})')
-	  _('md.css( $elem, "storage-key", {prop:val, ...} )')
-	  _('md.sync_scroll( sync? )')
-	  _('md.reset_config()')
-	  console.groupEnd()
-	  _("")
-	  
-	  if (! is_mac()) {
-	    $('.windosx').text('ctrl')
-	  }
-	}
-
-	function clog() {
-	  console.log.apply(console, arguments)
-	}
-
-	function is_mac() {
-	  return ['Mac68K', 'MacPPC', 'MacIntel'].indexOf(navigator.platform)
-	}
-
-
-	module.exports = {init: init}
-
-
 
 /***/ }
 /******/ ]);

@@ -15,41 +15,24 @@ require('jquery-tabby')
 
 // Libraries
 var throttle = require('lodash.throttle')
+  , storage = require('./lib/storage')
   , director = require('director')
-  , storage = require('./storage')
   , hljs = require('highlight.js')
   , flow = require('lodash.flow')
-  , search = require('./search')
+  , help = require('./lib/help')
+  , keys = require('./lib/keys')
   , pad = require('lodash.pad')
   , marked = require('marked')
-  , key = require('keymaster')
-  , help = require('./help')
+  , cfg = require('./lib/cfg')
+  , d = require('./lib/dom')
 
-// Config
-var cfg = {
-   sync_scroll: true
-  ,default_filename: '*scratch*'
-}
 
-// Common references
 var sync_scroll = scroll_syncer()
-  , $eframe = $('#editor-frame')
-  , $md = $('.markdown-body')
-  , $preview = $('#preview')
-  , $flist = $('#file-list')
-  , $ed = $('#editor')
-  , $bod = $('body')
-  , $rs = $('#rs')
-
-var $flist_frame = $flist.parent()
-  , $flist_search = $('#file-list-search')
-
 var CURRENT_FILE = null
+var router = init_routing()
 
 
 // App
-
-var router = init_routing()
 
 $(function() {
   load_config()
@@ -59,28 +42,27 @@ $(function() {
   listen_for_scroll()
   listen_for_input()
 
-  init_key_shortcuts()
-  init_file_search()
-  help.init($ed, $preview)
+  keys.init()
+  help.init(d.ed, d.preview)
 })
 
 
 // Private Helpers
 
 var highlight = throttle(function() {
-  $preview.find('pre code').each(function(i, block) {
+  d.preview.find('pre code').each(function(i, block) {
     hljs.highlightBlock(block)
   })
 }, 2000)
 
 function render(md) {
-  md || (md = $ed.val())
-  $md.html(marked(md))
+  md || (md = d.ed.val())
+  d.md.html(marked(md))
   highlight()
 }
 
 function save_file(cb) {
-  var md = $ed.val()
+  var md = d.ed.val()
   if ('function' != typeof cb) cb = undefined;
   storage.files(CURRENT_FILE, md, cb)
   return md
@@ -126,165 +108,89 @@ function init_routing() {
 }
 
 function init_editor() {
-  $ed.tabby({tabString: '    '})
-}
-
-function init_key_shortcuts() {
-  key.filter = function(){ return true }
-
-  key('command+s, ctrl+s', function() {
-    if (!CURRENT_FILE || (CURRENT_FILE == cfg.default_filename)) {
-      // save as a named file
-      var file_name = prompt('Name this file:')
-      if (file_name) {
-        CURRENT_FILE = file_name
-        save_file(function(){ router.setRoute('/'+file_name) })
-        storage.files(cfg.default_filename, '')
-      }
-    } else {
-      // placebo
-      var delay = 210
-        , old = document.title
-
-      document.title = '✔ Saved'
-      setTimeout(function(){ document.title = '✔ ' },       delay)
-      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 2)
-      setTimeout(function(){ document.title = '✔ ' },       delay * 3)
-      setTimeout(function(){ document.title = '✔ Saved!' }, delay * 4)
-      setTimeout(function(){ document.title = old},         delay * 9)
-    }
-
-    return false
-  })
-
-  key('ctrl+=', function() {
-    storage.config('sync-scroll', function(current) {
-      cfg.sync_scroll = !current
-      storage.config('sync-scroll', !current)
-    })
-  })
-
-  key('ctrl+p', function() {
-    storage.files.store.keys(function(e, ks) {
-      if (e) throw e;
-
-      key.setScope('file-list')
-      $flist_frame.show()
-
-      populate_file_list(ks)
-
-      $flist_search.focus()
-    })
-
-    return false
-  })
-
-  key('escape', 'file-list', function() {
-    $flist_frame.hide()
-    key.setScope(null)
-    return false
-  })
-}
-
-function init_file_search() {
-  search.init()
-  listen_for_search()
+  d.ed.tabby({tabString: '    '})
 }
 
 function load_config() {
-  storage.config('editor-css', into($ed, 'css', {default: {}}))
-  storage.config('preview-css', into($preview, 'css', {default: {}}))
+  storage.config('editor-css', into(d.ed, 'css', {default: {}}))
+  storage.config('preview-css', into(d.preview, 'css', {default: {}}))
   storage.config('sync-scroll', into(cfg, 'sync_scroll', {assign:true, default:true}))
 
   storage.config('rs-position', position_divider)
 }
 
 function load_file() {
-  storage.files(CURRENT_FILE, flow(into($ed, 'val'), render))
+  storage.files(CURRENT_FILE, flow(into(d.ed, 'val'), render))
 }
 
 function listen_for_resize() {
   var $doc = $(document)
     , $bod = $('body')
 
-  $rs.on('dragstart.resize', function() { 
+  d.rs.on('dragstart.resize', function() { 
     var ww = window.innerWidth
 
-    $ed.css({"user-select": "none"})
-    $preview.css({"user-select": "none"})
-    $rs.css({opacity:0})
+    d.ed.css({"user-select": "none"})
+    d.preview.css({"user-select": "none"})
+    d.rs.css({opacity:0})
 
     $doc.on('drop.resizing', function(e) { 
       e.preventDefault()
 
-      $rs.css({left: e.pageX})
+      d.rs.css({left: e.pageX})
       $bod.removeClass('resizing')
 
-      $ed.css({"user-select": ""})
-      $preview.css({"user-select": ""})
-      $rs.css({opacity:''})
+      d.ed.css({"user-select": ""})
+      d.preview.css({"user-select": ""})
+      d.rs.css({opacity:''})
 
       $doc.off('.resizing')
-      $rs.off('.resizing')
+      d.rs.off('.resizing')
 
       storage.config('rs-position', e.pageX)
     })
 
-    $rs.on('drag.resizing', function (e) {
+    d.rs.on('drag.resizing', function (e) {
       resize_frames(e.pageX, ww)
     })
   })
 }
 
 function listen_for_scroll() {
-  $ed.on('scroll.markula', function() {
-    sync_scroll($(this), $preview)
+  d.ed.on('scroll.markula', function() {
+    sync_scroll($(this), d.preview)
   })
 
-  $preview.on('scroll.markula', function() {
-    sync_scroll($(this), $ed)
+  d.preview.on('scroll.markula', function() {
+    sync_scroll($(this), d.ed)
   })
 }
 
 function listen_for_input() {
   var _render = render.bind(null,null)
-  $ed.on('input', throttle(flow(_render, save_file), 20))
-}
-
-function listen_for_search() {
-  $flist_search.on('input', function() {
-    var q = $flist_search.val()
-    populate_file_list(search.search(q))
-  })
+  d.ed.on('input', throttle(flow(_render, save_file), 20))
 }
 
 
 function handle_route(file_id) {
   file_id == null && (file_id = cfg.default_filename)
 
-  $flist_frame.hide()
-  $flist_search.val('')
+  d.flist_frame.hide()
+  d.flist_search.val('')
 
   CURRENT_FILE = file_id
   document.title = '✎ ' + file_id + '.md'
   load_file()
 
-  $ed.focus()
-}
-
-function populate_file_list(ks) {
-  $flist.empty()
-  ks.forEach(function(k) {
-    $flist.append('<li><a href="#/'+k+'">'+k+'</li>')
-  })
+  d.ed.focus()
 }
 
 function position_divider(xpx) {
   if (xpx == undefined) return;
   var ww = window.innerWidth
   resize_frames(xpx, ww)
-  $rs.css({left: xpx})
-  $bod.removeClass('resizing')
+  d.rs.css({left: xpx})
+  d.bod.removeClass('resizing')
 }
 
 function resize_frames(xpx, ww) {
@@ -293,8 +199,8 @@ function resize_frames(xpx, ww) {
   var x = (xpx / ww) * 100
     , xx = (100 - x)
 
-  $eframe.css({width: x+'%'})
-  $preview.css({left:x+'%', width:xx+'%'})
+  d.eframe.css({width: x+'%'})
+  d.preview.css({left:x+'%', width:xx+'%'})
 }
 
 function into(obj, k, opts) {
