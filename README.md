@@ -34,10 +34,18 @@ Want to customize everything? Open up the devtools console & read the instructio
 
 ## Dev
 
+#### Dev Cycle
+
 - `git clone git@github.com:runningskull/markula.git`
 - `cd markula && npm install && npm install --global webpack-dev-server`
-- `./dev`
+- `./dev` (starts local server & watch+rebuild loop)
 - open `localhost:8080`
+
+#### Deployment
+
+Build dist files with `webpack`.
+
+Deploy the demo app by fast-forwarding the `gh-pages` branch to master, and running `git push origin gh-pages`
 
 
 ## Notes

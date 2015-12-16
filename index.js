@@ -149,3 +149,7 @@ function resize_frames(xpx, ww) {
 }
 
 
+// TODO: this is needed by keys.js
+//       perhaps make a divider.js instead?
+window.position_divider = position_divider
+

@@ -4,6 +4,7 @@
   "description": "Minimal acceptable markdown editor",
   "main": "index.js",
   "dependencies": {
+    "clipboard": "1.5.5",
     "director": "1.2.8",
     "fuzzy": "0.1.1",
     "github-markdown-css": "2.1.0",
