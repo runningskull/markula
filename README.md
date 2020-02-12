@@ -1,7 +1,8 @@
 # Markula: a markdown editor that's friendlier than your landlord, at least
 
 <img src="https://cloud.githubusercontent.com/assets/187989/11111809/f1ef969e-88c9-11e5-9d7d-3a785ab56643.png" align=right>
-### ☞ &nbsp;<code>[USE IT](http://runningskull.github.io/markula/)</code> &nbsp;☜
+
+### ☞ &nbsp;[Launch Editor](http://runningskull.github.io/markula/) &nbsp;☜
 
 
 ## Why?
